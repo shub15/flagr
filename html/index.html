@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overrule - Contract reviews you can trust</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter & Instrument Serif -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital,wght@0,400;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #EAF4F4;
+            color: #111827;
+        }
+        
+        .font-serif-italic {
+            font-family: 'Instrument Serif', serif;
+            font-style: italic;
+        }
+        
+        .font-serif {
+            font-family: 'Instrument Serif', serif;
+        }
+
+        /* Glass Card Utility */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Animation Keyframes */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-fade-up {
+            animation: fadeIn 0.8s ease-out forwards;
+            opacity: 0; /* Hidden initially */
+        }
+        
+        /* Stagger delays */
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .delay-500 { animation-delay: 0.5s; }
+
+        /* Smooth scroll */
+        html { scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="min-h-screen relative overflow-x-hidden selection:bg-black selection:text-white">
+
+    <!-- Fixed Background Elements (Matches VibeTask Vibe) -->
+    <div class="fixed inset-0 z-0 pointer-events-none">
+        <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-[#dcedf0] via-[#eef6f6] to-[#d8f0e9]"></div>
+        
+        <!-- Soft blurred blobs -->
+        <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-200/30 rounded-full mix-blend-multiply filter blur-[80px] animate-pulse"></div>
+        <div class="absolute bottom-[10%] right-[-5%] w-[600px] h-[600px] bg-teal-200/30 rounded-full mix-blend-multiply filter blur-[80px]"></div>
+        <div class="absolute top-[40%] left-[30%] w-[300px] h-[300px] bg-blue-200/20 rounded-full mix-blend-multiply filter blur-[60px]"></div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="relative z-20 w-full flex justify-center pt-8 px-4 animate-fade-up">
+        <div class="glass-panel rounded-full px-6 py-2.5 w-full max-w-[600px] flex items-center justify-between">
+            <span class="text-gray-900 font-serif-italic text-xl tracking-wide ml-2">Overrule</span>
+            <div class="flex gap-4 text-xs font-medium text-gray-500">
+                <a href="#features" class="hover:text-black transition-colors">Features</a>
+                <a href="#security" class="hover:text-black transition-colors">Security</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Wrapper -->
+    <main class="relative z-10 w-full max-w-5xl mx-auto px-6 flex flex-col items-center">
+        
+        <!-- HERO SECTION -->
+        <section class="flex flex-col items-center justify-center text-center pt-20 pb-24 md:pt-32 md:pb-32">
+            
+            <!-- Badge -->
+            <div class="animate-fade-up delay-100 mb-8">
+                <div class="glass-panel inline-flex items-center gap-2 rounded-full px-4 py-1.5">
+                    <i data-lucide="scale" class="w-3.5 h-3.5 text-gray-600"></i>
+                    <span class="text-xs font-medium text-gray-600 uppercase tracking-wide">AI Legal Assistant</span>
+                </div>
+            </div>
+
+            <!-- Headline -->
+            <h1 class="animate-fade-up delay-200 text-5xl md:text-7xl lg:text-[5.5rem] leading-[1.05] text-gray-900 mb-8 tracking-tight">
+                <span class="block font-normal">Contract reviews you</span>
+                <span class="block font-serif-italic font-normal text-gray-800 mt-2">can trust instantly</span>
+            </h1>
+
+            <!-- Subtext -->
+            <p class="animate-fade-up delay-300 text-lg md:text-xl text-gray-500 font-light max-w-xl mb-10 leading-relaxed">
+                Upload an agreement or policy and get clause‑level risks, suggested redlines, and citations. Multi‑LLM council, one clear answer.
+            </p>
+
+            <!-- CTA Form -->
+            <div class="animate-fade-up delay-300 w-full max-w-[480px]">
+                <form class="glass-panel p-1.5 rounded-2xl flex items-center shadow-lg shadow-gray-200/50">
+                    <input 
+                        type="email" 
+                        placeholder="Enter your email" 
+                        required
+                        class="flex-1 bg-transparent border-none outline-none px-4 py-3 text-gray-800 placeholder-gray-400 text-base"
+                    >
+                    <button 
+                        type="submit" 
+                        class="bg-black text-white px-6 py-3 rounded-xl font-medium text-sm hover:bg-gray-800 hover:scale-[1.02] transition-all duration-200 whitespace-nowrap"
+                    >
+                        Start free
+                    </button>
+                </form>
+                <div class="flex justify-between items-center mt-4 px-2">
+                    <p class="text-xs text-gray-400 font-light">No sign‑up required. Private by default.</p>
+                    <a href="#" class="text-xs text-gray-500 hover:text-black underline decoration-gray-300 underline-offset-4 font-light">Try a sample</a>
+                </div>
+                <p class="text-[10px] text-gray-300 mt-8 text-center uppercase tracking-widest">Not Legal Advice</p>
+            </div>
+        </section>
+
+
+        <!-- FEATURES GRID -->
+        <section id="features" class="w-full pb-24 animate-fade-up delay-400">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div class="glass-panel p-8 rounded-3xl hover:bg-white/50 transition-colors duration-300">
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-gray-100">
+                        <i data-lucide="users" class="w-5 h-5 text-gray-700"></i>
+                    </div>
+                    <h3 class="font-serif text-2xl mb-3 text-gray-900">Council of experts</h3>
+                    <p class="text-gray-500 font-light leading-relaxed text-sm">
+                        Multiple specialized models analyze risk, compliance, finance, and drafting simultaneously.
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass-panel p-8 rounded-3xl hover:bg-white/50 transition-colors duration-300">
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-gray-100">
+                        <i data-lucide="scan-text" class="w-5 h-5 text-gray-700"></i>
+                    </div>
+                    <h3 class="font-serif text-2xl mb-3 text-gray-900">Clause‑level citations</h3>
+                    <p class="text-gray-500 font-light leading-relaxed text-sm">
+                        Every claim links to exact text spans within your document—no black box opinions.
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass-panel p-8 rounded-3xl hover:bg-white/50 transition-colors duration-300">
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-gray-100">
+                        <i data-lucide="pen-line" class="w-5 h-5 text-gray-700"></i>
+                    </div>
+                    <h3 class="font-serif text-2xl mb-3 text-gray-900">Redline suggestions</h3>
+                    <p class="text-gray-500 font-light leading-relaxed text-sm">
+                        Ready‑to‑paste language for negotiation emails or direct policy updates.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- HOW IT WORKS & SECURITY -->
+        <section class="w-full pb-24 animate-fade-up delay-500">
+            <div class="glass-panel rounded-[40px] p-8 md:p-12">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+                    
+                    <!-- How it Works -->
+                    <div>
+                        <h2 class="font-serif text-3xl mb-8">How it works</h2>
+                        <div class="space-y-8">
+                            <div class="flex gap-4 items-start">
+                                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-black text-white text-xs flex items-center justify-center mt-1">1</span>
+                                <div>
+                                    <h4 class="font-medium text-gray-900">Upload</h4>
+                                    <p class="text-sm text-gray-500 font-light mt-1">PDF, DOCX, or clear image scans.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4 items-start">
+                                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-white border border-gray-200 text-gray-500 text-xs flex items-center justify-center mt-1">2</span>
+                                <div>
+                                    <h4 class="font-medium text-gray-900">Add context</h4>
+                                    <p class="text-sm text-gray-500 font-light mt-1">Define your role, jurisdiction, and priorities.</p>
+                                </div>
+                            </div>
+                            <div class="flex gap-4 items-start">
+                                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-white border border-gray-200 text-gray-500 text-xs flex items-center justify-center mt-1">3</span>
+                                <div>
+                                    <h4 class="font-medium text-gray-900">Review</h4>
+                                    <p class="text-sm text-gray-500 font-light mt-1">Get risks, negotiables, and suggested edits.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Security (Visual Box) -->
+                    <div id="security" class="bg-white/40 rounded-3xl p-8 border border-white/60 relative overflow-hidden">
+                        <div class="absolute -top-10 -right-10 w-32 h-32 bg-green-100/50 rounded-full blur-xl"></div>
+                        
+                        <div class="relative z-10">
+                            <h2 class="font-serif text-3xl mb-6">Private by default.</h2>
+                            <ul class="space-y-4">
+                                <li class="flex items-center gap-3 text-sm text-gray-600 font-light">
+                                    <i data-lucide="lock" class="w-4 h-4 text-gray-400"></i>
+                                    Encrypted in transit and at rest.
+                                </li>
+                                <li class="flex items-center gap-3 text-sm text-gray-600 font-light">
+                                    <i data-lucide="trash-2" class="w-4 h-4 text-gray-400"></i>
+                                    No retention by default; delete with one click.
+                                </li>
+                                <li class="flex items-center gap-3 text-sm text-gray-600 font-light">
+                                    <i data-lucide="user-check" class="w-4 h-4 text-gray-400"></i>
+                                    “Not legal advice.” You stay in control.
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+
+        <!-- FINAL CTA -->
+        <section class="text-center pb-20 pt-10 animate-fade-up delay-500">
+            <h2 class="font-serif-italic text-4xl md:text-5xl text-gray-900 mb-8">
+                Try it on your next contract
+            </h2>
+            <button class="bg-black text-white px-8 py-3.5 rounded-full font-medium text-sm hover:bg-gray-800 hover:scale-105 transition-all duration-300 shadow-xl shadow-gray-400/20">
+                Start free
+            </button>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="w-full border-t border-gray-200/50 py-8 mt-auto animate-fade-up delay-500">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <span class="font-serif-italic text-lg text-gray-400">Overrule</span>
+                <div class="flex gap-6 text-xs text-gray-400 font-light">
+                    <a href="#" class="hover:text-gray-800 transition-colors">Security</a>
+                    <a href="#" class="hover:text-gray-800 transition-colors">Privacy</a>
+                    <a href="#" class="hover:text-gray-800 transition-colors">Terms</a>
+                    <a href="#" class="hover:text-gray-800 transition-colors">Contact</a>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Initialize Icons -->
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
