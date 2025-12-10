@@ -528,8 +528,9 @@ async def get_annotated_pdf(review_id: str) -> FileResponse:
 @router.get("/reviews/{review_id}/export/docx")
 async def export_review_word(
     review_id: str,
+    mode: str = "balanced",
     db: Session = Depends(get_db)
-) -> FileResponse:
+):
     """
     Export contract review as Word document with redline markup.
     """
@@ -585,7 +586,8 @@ async def export_review_word(
             critical_points=review_result.critical_points,
             missing_points=review_result.missing_points,
             negotiable_points=review_result.negotiable_points,
-            safety_score=review.safety_score
+            safety_score=review.safety_score,
+            refinement_mode=mode
         )
         
         # Generate Word document with refined contract
@@ -682,7 +684,8 @@ async def export_review_pdf(
             critical_points=review_result.critical_points,
             missing_points=review_result.missing_points,
             negotiable_points=review_result.negotiable_points,
-            safety_score=review.safety_score
+            safety_score=review.safety_score,
+            refinement_mode=mode
         )
         
         # Generate PDF with refined contract
