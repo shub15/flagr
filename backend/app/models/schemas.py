@@ -4,7 +4,7 @@ Defines strict data contracts between agents and the API.
 """
 
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict
 from enum import Enum
 from datetime import datetime
 
@@ -51,6 +51,12 @@ class ContractReviewResult(BaseModel):
     """Final aggregated review result."""
     review_id: str
     safety_score: int = Field(..., ge=0, le=100, description="Overall safety score (0-100)")
+    
+    # Executive Summary
+    summary: Optional[str] = Field(None, description="2-3 sentence executive summary")
+    recommendation: Optional[str] = Field(None, description="SIGN, NEGOTIATE, or REJECT")
+    
+    # Detailed findings
     critical_points: List[ReviewPoint] = Field(default_factory=list)
     good_points: List[ReviewPoint] = Field(default_factory=list)
     negotiable_points: List[ReviewPoint] = Field(default_factory=list)
@@ -77,6 +83,8 @@ class ContractReviewResult(BaseModel):
             "example": {
                 "review_id": "rev_123456",
                 "safety_score": 65,
+                "summary": "Contract has 3 critical issues and 5 missing clauses. Recommend negotiating before signing.",
+                "recommendation": "NEGOTIATE",
                 "critical_points": [
                     {
                         "category": "CRITICAL",
@@ -90,14 +98,7 @@ class ContractReviewResult(BaseModel):
                 "negotiable_points": [],
                 "missing_points": [],
                 "total_findings": 1,
-                "annotated_pdf_url": "/api/reviews/rev_123456/annotated-pdf",
-                "annotation_map": {
-                    "CRITICAL_0": {
-                        "category": "CRITICAL",
-                        "quote": "Employer may terminate without notice",
-                        "advice": "Request minimum 30-day notice period"
-                    }
-                }
+                "annotated_pdf_url": "/api/reviews/rev_123456/annotated-pdf"
             }
         }
 

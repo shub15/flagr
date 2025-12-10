@@ -1,6 +1,6 @@
 """
 The Referee Agent - Aggregates, deduplicates, resolves conflicts, and scores.
-Does not generate new ideas, only synthesizes findings from other agents.
+Uses Gemini LLM to generate contextual executive summaries based on council findings.
 """
 
 import logging
@@ -17,10 +17,12 @@ class RefereeAgent:
     """
     Referee agent that aggregates findings from Skeptic, Strategist, and Auditor.
     Implements "Risk Trumps Benefit" conflict resolution.
+    Uses LLM to generate contextual summaries.
     """
     
-    def __init__(self):
+    def __init__(self, llm_service=None):
         self.agent_name = "referee"
+        self.llm_service = llm_service
     
     def deduplicate_points(self, points: List[ReviewPoint]) -> List[ReviewPoint]:
         """
@@ -133,7 +135,127 @@ class RefereeAgent:
         
         return score
     
-    def aggregate(
+    def _generate_fallback_summary(
+        self,
+        safety_score: int,
+        critical_count: int,
+        missing_count: int,
+        negotiable_count: int,
+        good_count: int
+    ) -> tuple:
+        """Fallback summary generation without LLM."""
+        
+        if safety_score >= 80 and critical_count == 0:
+            recommendation = "SIGN"
+            summary = f"Contract shows strong protections with {good_count} positive aspects and minimal concerns. Safe to proceed."
+        elif safety_score >= 60 and critical_count <= 2:
+            recommendation = "NEGOTIATE"
+            summary = f"Contract has {critical_count} critical issues and {missing_count} missing clauses. Recommend negotiating these points before signing."
+        elif critical_count >= 3:
+            recommendation = "REJECT"
+            summary = f"Contract presents significant risks with {critical_count} critical issues. Seek legal counsel or reject this offer."
+        else:
+            recommendation = "NEGOTIATE"
+            summary = f"Contract requires improvements. Found {critical_count} critical issues, {missing_count} missing clauses, and {negotiable_count} negotiable points."
+        
+        return summary, recommendation
+    
+    async def _generate_summary_with_llm(
+        self,
+        safety_score: int,
+        critical_points: List[ReviewPoint],
+        missing_points: List[ReviewPoint],
+        negotiable_points: List[ReviewPoint],
+        good_points: List[ReviewPoint]
+    ) -> tuple:
+        """Generate executive summary using Gemini LLM based on actual findings."""
+        
+        if not self.llm_service:
+            # Fallback to simple logic if no LLM
+            return self._generate_fallback_summary(
+                safety_score,
+                len(critical_points),
+                len(missing_points),
+                len(negotiable_points),
+                len(good_points)
+            )
+        
+        # Build concise summary of top findings for LLM
+        critical_summary = "\n".join([f"- {p.advice[:150]}" for p in critical_points[:5]]) if critical_points else "None"
+        missing_summary = "\n".join([f"- {p.advice[:150]}" for p in missing_points[:5]]) if missing_points else "None"
+        
+        prompt = f"""You are the Referee in a legal council analyzing an employment contract.
+
+The Skeptic, Strategist, and Auditor agents have completed their analysis:
+
+SAFETY SCORE: {safety_score}/100
+
+TOP CRITICAL ISSUES ({len(critical_points)} total):
+{critical_summary}
+
+TOP MISSING CLAUSES ({len(missing_points)} total):
+{missing_summary}
+
+NEGOTIABLE POINTS: {len(negotiable_points)}
+POSITIVE ASPECTS: {len(good_points)}
+
+Based on these council findings, provide your final verdict:
+
+1. Executive Summary (2-3 sentences max)
+2. Recommendation (SIGN, NEGOTIATE, or REJECT)
+
+Guidelines:
+- SIGN: Score 80+, no critical issues, safe contract
+- NEGOTIATE: Moderate risks, issues can be addressed
+- REJECT: Serious risks (3+ critical issues), dangerous contract
+
+Respond ONLY with JSON:
+{{"summary": "your summary", "recommendation": "SIGN|NEGOTIATE|REJECT"}}"""
+        
+        try:
+            result = await self.llm_service.gemini_referee.generate(
+                prompt=prompt,
+                system_prompt="You are a senior legal advisor providing final contract verdicts."
+            )
+            
+            if result["success"]:
+                import json
+                content = result["content"].strip()
+                
+                # Clean markdown formatting
+                if "```" in content:
+                    content = content.split("```")[1]
+                    if content.startswith("json"):
+                        content = content[4:]
+                    content = content.strip()
+                
+                data = json.loads(content)
+                summary = data.get("summary", "").strip()
+                recommendation = data.get("recommendation", "NEGOTIATE").strip().upper()
+                
+                # Validate
+                if recommendation not in ["SIGN", "NEGOTIATE", "REJECT"]:
+                    recommendation = "NEGOTIATE"
+                
+                if not summary:
+                    raise ValueError("Empty summary")
+                
+                logger.info(f"✅ Gemini verdict: {recommendation} - \"{summary[:50]}...\"")
+                return summary, recommendation
+                
+        except Exception as e:
+            logger.warning(f"Gemini summary failed: {e}, using fallback")
+        
+        # Fallback
+        return self._generate_fallback_summary(
+            safety_score,
+            len(critical_points),
+            len(missing_points),
+            len(negotiable_points),
+            len(good_points)
+        )
+    
+    async def aggregate(
         self,
         skeptic_points: List[ReviewPoint],
         strategist_points: List[ReviewPoint],
@@ -148,6 +270,7 @@ class RefereeAgent:
         3. Resolve conflicts (Risk Trumps Benefit)
         4. Categorize
         5. Calculate safety score
+        6. Generate LLM-based summary
         """
         logger.info("Referee aggregating findings from all agents")
         
@@ -180,10 +303,21 @@ class RefereeAgent:
             good_count=len(categorized[ReviewCategory.GOOD])
         )
         
+        # Generate LLM-based summary and recommendation
+        summary, recommendation = await self._generate_summary_with_llm(
+            safety_score=safety_score,
+            critical_points=categorized[ReviewCategory.CRITICAL],
+            missing_points=categorized[ReviewCategory.MISSING],
+            negotiable_points=categorized[ReviewCategory.NEGOTIABLE],
+            good_points=categorized[ReviewCategory.GOOD]
+        )
+        
         # Create result
         result = ContractReviewResult(
             review_id=f"rev_{uuid.uuid4().hex[:12]}",
             safety_score=safety_score,
+            summary=summary,
+            recommendation=recommendation,
             critical_points=categorized[ReviewCategory.CRITICAL],
             good_points=categorized[ReviewCategory.GOOD],
             negotiable_points=categorized[ReviewCategory.NEGOTIABLE],
@@ -195,7 +329,8 @@ class RefereeAgent:
         logger.info(
             f"Referee completed aggregation: "
             f"Safety Score {safety_score}/100, "
-            f"Total Findings: {result.total_findings}"
+            f"Total Findings: {result.total_findings}, "
+            f"Recommendation: {recommendation}"
         )
         
         return result

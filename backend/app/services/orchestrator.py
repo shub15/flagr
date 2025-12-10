@@ -7,7 +7,9 @@ import logging
 import asyncio
 from typing import List
 from app.models.schemas import ContractReviewResult
-from app.agents import skeptic_agent, strategist_agent, auditor_agent, referee_agent
+from app.agents import skeptic_agent, strategist_agent, auditor_agent
+from app.agents.referee import RefereeAgent
+from app.services.llm_service import llm_service
 
 logger = logging.getLogger(__name__)
 
@@ -19,16 +21,17 @@ class ContractOrchestrator:
     Architecture:
     - Level 1 (Fan-Out): Run 3 agents in parallel (Skeptic, Strategist, Auditor)
     - Level 2 (Within each agent): Run 3 LLMs in parallel (council)
-    - Fan-In: Referee aggregates all findings
+    - Fan-In: Referee aggregates all findings with LLM-based summary
     
-    Total parallelism: 9 LLM calls + 3 RAG retrievals
+    Total parallelism: 9 LLM calls + 3 RAG retrievals + 1 Gemini summary
     """
     
     def __init__(self):
         self.skeptic = skeptic_agent
         self.strategist = strategist_agent
         self.auditor = auditor_agent
-        self.referee = referee_agent
+        # Instantiate Referee with LLM service for contextual summary generation
+        self.referee = RefereeAgent(llm_service=llm_service)
     
     async def review_contract(self, contract_text: str, contract_type: str = "employment") -> ContractReviewResult:
         """
@@ -74,10 +77,10 @@ class ContractOrchestrator:
             logger.error(f"Agent execution failed: {e}")
             raise
         
-        # Fan-In: Referee aggregates all findings
+        # Fan-In: Referee aggregates all findings (now async for LLM summary)
         logger.info("Fan-In: Referee aggregating all findings...")
         
-        result = self.referee.aggregate(
+        result = await self.referee.aggregate(
             skeptic_points=skeptic_points,
             strategist_points=strategist_points,
             auditor_points=auditor_points
