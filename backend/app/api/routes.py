@@ -577,22 +577,34 @@ async def export_review_word(
             created_at=review.created_at
         )
         
-        # Generate Word document
+        # Generate refined contract using LLM
+        from app.services.contract_refinement import contract_refinement_service
+        
+        refined_contract = await contract_refinement_service.refine_contract(
+            original_contract=review.contract_text,
+            critical_points=review_result.critical_points,
+            missing_points=review_result.missing_points,
+            negotiable_points=review_result.negotiable_points,
+            safety_score=review.safety_score
+        )
+        
+        # Generate Word document with refined contract
         output_dir = Path("data/exports")
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"{review_id}_redline.docx"
+        output_path = output_dir / f"{review_id}_refined.docx"
         
-        export_service.generate_word_redline(
-            review=review_result,
-            contract_text=review.contract_text,
+        export_service.generate_refined_contract_docx(
+            refined_contract=refined_contract,
+            safety_score=review.safety_score,
+            review_id=review.review_id,
             output_path=str(output_path)
         )
         
-        logger.info(f"Generated Word export for review {review_id}")
+        logger.info(f"Generated refined contract DOCX for review {review_id}")
         
         return FileResponse(
             path=str(output_path),
-            filename=f"{review_id}_redline.docx",
+            filename=f"{review_id}_refined.docx",
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
         
@@ -657,22 +669,35 @@ async def export_review_pdf(
             total_findings=review.total_findings,
             created_at=review.created_at
         )
+
+        # Generate refined contract using LLM
+        from app.services.contract_refinement import contract_refinement_service
         
-        # Generate PDF report
+        refined_contract = await contract_refinement_service.refine_contract(
+            original_contract=review.contract_text,
+            critical_points=review_result.critical_points,
+            missing_points=review_result.missing_points,
+            negotiable_points=review_result.negotiable_points,
+            safety_score=review.safety_score
+        )
+        
+        # Generate PDF with refined contract
         output_dir = Path("data/exports")
         output_dir.mkdir(parents=True, exist_ok=True)
-        output_path = output_dir / f"{review_id}_report.pdf"
+        output_path = output_dir / f"{review_id}_refined.pdf"
         
-        export_service.generate_pdf_report(
-            review=review_result,
+        export_service.generate_refined_contract_pdf(
+            refined_contract=refined_contract,
+            safety_score=review.safety_score,
+            review_id=review.review_id,
             output_path=str(output_path)
         )
         
-        logger.info(f"Generated PDF export for review {review_id}")
+        logger.info(f"Generated refined contract PDF for review {review_id}")
         
         return FileResponse(
             path=str(output_path),
-            filename=f"{review_id}_report.pdf",
+            filename=f"{review_id}_refined.pdf",
             media_type="application/pdf"
         )
         

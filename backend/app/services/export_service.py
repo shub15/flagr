@@ -1,41 +1,40 @@
 """
-Export service for generating Word redlines and PDF reports from contract reviews.
+Export service for generating refined contracts (NOT review reports).
+Uses contract refinement service to create improved contracts.
 """
 
 import logging
-from typing import List
 from pathlib import Path
 from datetime import datetime
 from docx import Document
 from docx.shared import RGBColor, Pt, Inches
-from docx.enum.text import WD_COLOR_INDEX
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.lib import colors
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
-from reportlab.lib.enums import TA_CENTER, TA_LEFT
-
-from app.models.schemas import ContractReviewResult, ReviewCategory
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 
 logger = logging.getLogger(__name__)
 
 
 class ExportService:
-    """Service for exporting contract reviews to various formats."""
+    """Service for exporting refined contracts to various formats."""
     
-    def generate_word_redline(
+    def generate_refined_contract_docx(
         self,
-        review: ContractReviewResult,
-        contract_text: str,
+        refined_contract: str,
+        safety_score: int,
+        review_id: str,
         output_path: str
     ) -> str:
         """
-        Generate a Word document with redline markups.
+        Generate a Word document with the refined/improved contract.
         
         Args:
-            review: Contract review result
-            contract_text: Original contract text
+            refined_contract: LLM-generated improved contract text
+            safety_score: Original safety score
+            review_id: Review ID for reference
             output_path: Path to save the DOCX file
         
         Returns:
@@ -45,114 +44,78 @@ class ExportService:
             doc = Document()
             
             # Title
-            title = doc.add_heading('Contract Review - Redline Markup', 0)
+            title = doc.add_heading('Refined Employment Contract', 0)
             title.alignment = 1  # Center
             
-            # Summary
-            doc.add_heading('Review Summary', level=1)
-            summary_table = doc.add_table(rows=3, cols=2)
-            summary_table.style = 'Light Grid Accent 1'
+            # Metadata
+            meta_para = doc.add_paragraph()
+            meta_para.add_run(f'Original Safety Score: {safety_score}/100\n').italic = True
+            meta_para.add_run(f'Review ID: {review_id}\n').italic = True
+            meta_para.add_run(f'Generated: {datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")}\n').italic = True
+            meta_para.alignment = 1
             
-            cells = summary_table.rows[0].cells
-            cells[0].text = 'Review ID'
-            cells[1].text = review.review_id
-            
-            cells = summary_table.rows[1].cells
-            cells[0].text = 'Safety Score'
-            cells[1].text = f"{review.safety_score}/100"
-            
-            cells = summary_table.rows[2].cells
-            cells[0].text = 'Total Findings'
-            cells[1].text = str(review.total_findings)
-            
+            doc.add_paragraph('_' * 80)
             doc.add_paragraph()
             
-            # Findings sections
-            if review.critical_points:
-                doc.add_heading('CRITICAL Issues', level=1)
-                for i, point in enumerate(review.critical_points, 1):
-                    p = doc.add_paragraph(style='List Number')
-                    p.add_run(f"[CRITICAL] ").bold = True
-                    p.add_run(point.advice)
-                    if point.quote:
-                        quote_p = doc.add_paragraph(style='Quote')
-                        quote_p.add_run(f'Quote: "{point.quote}"')
-                        # Highlight quote in red
-                        quote_run = quote_p.runs[0]
-                        quote_run.font.color.rgb = RGBColor(255, 0, 0)
-                    if point.legal_reference:
-                        ref_p = doc.add_paragraph(style='Intense Quote')
-                        ref_p.add_run(f'Legal Reference: {point.legal_reference}')
-                doc.add_paragraph()
+            # Info box
+            info_para = doc.add_paragraph()
+            info_run = info_para.add_run(
+                '📝 This is a refined version of your contract with all recommended improvements applied. '
+                'Critical issues have been fixed, missing clauses have been added, and negotiable points have been improved.'
+            )
+            info_run.font.color.rgb = RGBColor(0, 100, 200)
+            info_run.italic = True
             
-            if review.missing_points:
-                doc.add_heading('MISSING Clauses', level=1)
-                for i, point in enumerate(review.missing_points, 1):
-                    p = doc.add_paragraph(style='List Number')
-                    p.add_run(f"[MISSING] ").bold = True
-                    p.add_run(point.advice)
-                    if point.legal_reference:
-                        ref_p = doc.add_paragraph(style='Intense Quote')
-                        ref_p.add_run(f'Legal Reference: {point.legal_reference}')
-                doc.add_paragraph()
+            doc.add_paragraph()
+            doc.add_heading('IMPROVED CONTRACT', level=1)
+            doc.add_paragraph()
             
-            if review.negotiable_points:
-                doc.add_heading('NEGOTIABLE Terms', level=1)
-                for i, point in enumerate(review.negotiable_points, 1):
-                    p = doc.add_paragraph(style='List Number')
-                    p.add_run(f"[NEGOTIABLE] ").bold = True
-                    p.add_run(point.advice)
-                    if point.quote:
-                        quote_p = doc.add_paragraph(style='Quote')
-                        quote_p.add_run(f'Quote: "{point.quote}"')
-                        # Highlight in orange
-                        quote_run = quote_p.runs[0]
-                        quote_run.font.color.rgb = RGBColor(255, 165, 0)
-                doc.add_paragraph()
-            
-            if review.good_points:
-                doc.add_heading('GOOD Points (Compliant)', level=1)
-                for i, point in enumerate(review.good_points, 1):
-                    p = doc.add_paragraph(style='List Number')
-                    p.add_run(f"[GOOD] ").bold = True
-                    p.add_run(point.advice)
-                    if point.quote:
-                        quote_p = doc.add_paragraph(style='Quote')
-                        quote_p.add_run(f'Quote: "{point.quote}"')
-                        # Highlight in green
-                        quote_run = quote_p.runs[0]
-                        quote_run.font.color.rgb = RGBColor(0, 128, 0)
-                doc.add_paragraph()
-            
-            # Original contract with annotations
-            doc.add_page_break()
-            doc.add_heading('Original Contract with Annotations', level=1)
-            
-            # Add contract text with simple paragraph breaks
-            paragraphs = contract_text.split('\n\n')
+            # Add refined contract text with proper formatting
+            paragraphs = refined_contract.split('\n\n')
             for para in paragraphs:
                 if para.strip():
-                    doc.add_paragraph(para.strip())
+                    # Check if it's a heading (all caps or starts with number)
+                    if para.strip().isupper() and len(para.strip()) < 100:
+                        doc.add_heading(para.strip(), level=2)
+                    elif para.strip()[0].isdigit() and '.' in para[:5]:
+                        # Numbered section
+                        doc.add_paragraph(para.strip(), style='List Number')
+                    else:
+                        doc.add_paragraph(para.strip())
+            
+            # Footer
+            doc.add_page_break()
+            footer = doc.add_paragraph()
+            footer.add_run('Legal Disclaimer\n').bold = True
+            footer.add_run(
+                'This refined contract is generated by AI based on legal analysis. '
+                'It is provided for reference and improvement purposes only. '
+                'Please have this reviewed by a qualified attorney before signing.'
+            ).italic = True
             
             # Save
             doc.save(output_path)
-            logger.info(f"Generated Word redline: {output_path}")
+            logger.info(f"✅ Generated refined contract DOCX: {output_path}")
             return output_path
             
         except Exception as e:
-            logger.error(f"Failed to generate Word redline: {e}")
+            logger.error(f"Failed to generate refined contract DOCX: {e}")
             raise
     
-    def generate_pdf_report(
+    def generate_refined_contract_pdf(
         self,
-        review: ContractReviewResult,
+        refined_contract: str,
+        safety_score: int,
+        review_id: str,
         output_path: str
     ) -> str:
         """
-        Generate a PDF summary report.
+        Generate a PDF with the refined/improved contract.
         
         Args:
-            review: Contract review result
+            refined_contract: LLM-generated improved contract text
+            safety_score: Original safety score
+            review_id: Review ID for reference
             output_path: Path to save the PDF file
         
         Returns:
@@ -165,7 +128,7 @@ class ExportService:
                 rightMargin=72,
                 leftMargin=72,
                 topMargin=72,
-                bottomMargin=18
+                bottomMargin=50
             )
             
             # Container for the 'Flowable' objects
@@ -176,104 +139,85 @@ class ExportService:
             title_style = ParagraphStyle(
                 'CustomTitle',
                 parent=styles['Heading1'],
-                fontSize=24,
+                fontSize=22,
                 textColor=colors.HexColor('#1f4788'),
-                spaceAfter=30,
+                spaceAfter=20,
                 alignment=TA_CENTER
             )
             
-            heading_style = ParagraphStyle(
-                'CustomHeading',
-                parent=styles['Heading2'],
-                fontSize=14,
-                textColor=colors.HexColor('#1f4788'),
+            body_style = ParagraphStyle(
+                'CustomBody',
+                parent=styles['Normal'],
+                fontSize=11,
+                alignment=TA_JUSTIFY,
                 spaceAfter=12,
-                spaceBefore=12
+                leading=16
             )
             
             # Title
-            elements.append(Paragraph("Contract Review Report", title_style))
+            elements.append(Paragraph("Refined Employment Contract", title_style))
             elements.append(Spacer(1, 12))
             
-            # Summary Table
-            summary_data = [
-                ['Review ID', review.review_id],
-                ['Date', datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')],
-                ['Safety Score', f'{review.safety_score}/100'],
-                ['Total Findings', str(review.total_findings)],
-                ['Critical Issues', str(len(review.critical_points))],
-                ['Missing Clauses', str(len(review.missing_points))],
-                ['Negotiable Terms', str(len(review.negotiable_points))],
-                ['Good Points', str(len(review.good_points))]
-            ]
-            
-            summary_table = Table(summary_data, colWidths=[2*inch, 4*inch])
-            summary_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#e8f0f7')),
-                ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, -1), 10),
-                ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
-                ('TOPPADDING', (0, 0), (-1, -1), 8),
-                ('GRID', (0, 0), (-1, -1), 1, colors.grey)
-            ]))
-            
-            elements.append(summary_table)
+            # Metadata
+            meta_text = f'''
+            <i>
+            Original Safety Score: {safety_score}/100<br/>
+            Review ID: {review_id}<br/>
+            Generated: {datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")}
+            </i>
+            '''
+            elements.append(Paragraph(meta_text, styles['Normal']))
             elements.append(Spacer(1, 20))
             
-            # Add findings sections
-            def add_findings_section(title: str, findings: List, color: str):
-                if not findings:
-                    return
-                
-                elements.append(Paragraph(title, heading_style))
-                elements.append(Spacer(1, 6))
-                
-                for i, point in enumerate(findings, 1):
-                    # Finding text
-                    text = f"<b>{i}.</b> {point.advice}"
-                    elements.append(Paragraph(text, styles['Normal']))
-                    
-                    # Quote if available
-                    if point.quote:
-                        quote_text = f'<i>Contract Quote: "{point.quote[:200]}{"..." if len(point.quote) > 200 else ""}"</i>'
-                        elements.append(Paragraph(quote_text, styles['Normal']))
-                    
-                    # Legal reference if available
-                    if point.legal_reference:
-                        ref_text = f'<font color="{color}"><b>Legal Reference:</b> {point.legal_reference[:200]}</font>'
-                        elements.append(Paragraph(ref_text, styles['Normal']))
-                    
-                    # Confidence
-                    conf_text = f'<font size=8>Agent: {point.agent_source} | Confidence: {point.confidence:.0%}</font>'
-                    elements.append(Paragraph(conf_text, styles['Normal']))
-                    elements.append(Spacer(1, 10))
-                
-                elements.append(Spacer(1, 12))
+            # Info box
+            info_text = '''
+            <para align=center>
+            <font color="#0064c8"><i>
+            📝 This is a refined version of your contract with all recommended improvements applied.<br/>
+            Critical issues have been fixed, missing clauses have been added, and negotiable points have been improved.
+            </i></font>
+            </para>
+            '''
+            elements.append(Paragraph(info_text, styles['Normal']))
+            elements.append(Spacer(1, 20))
             
-            # Add each section
-            add_findings_section('CRITICAL Issues ⚠️', review.critical_points, '#ff0000')
-            add_findings_section('MISSING Clauses 📋', review.missing_points, '#ff8800')
-            add_findings_section('NEGOTIABLE Terms 💼', review.negotiable_points, '#0088ff')
-            add_findings_section('GOOD Points ✅', review.good_points, '#00aa00')
+            # Contract heading
+            elements.append(Paragraph("<b>IMPROVED CONTRACT</b>", styles['Heading2']))
+            elements.append(Spacer(1, 12))
             
-            # Footer note
+            # Add refined contract content
+            paragraphs = refined_contract.split('\n\n')
+            for para in paragraphs:
+                if para.strip():
+                    # Simple formatting
+                    if para.strip().isupper() and len(para.strip()) < 100:
+                        # Heading
+                        elements.append(Paragraph(f"<b>{para.strip()}</b>", styles['Heading3']))
+                    else:
+                        # Normal paragraph
+                        elements.append(Paragraph(para.strip(), body_style))
+            
+            # Footer disclaimer
             elements.append(Spacer(1, 30))
-            disclaimer = Paragraph(
-                '<i>Note: This is an automated review and does not constitute legal advice. '
-                'Please consult with a qualified attorney for legal guidance.</i>',
+            elements.append(PageBreak())
+            disclaimer_title = Paragraph("<b>Legal Disclaimer</b>", styles['Heading3'])
+            disclaimer_text = Paragraph(
+                '<i>This refined contract is generated by AI based on legal analysis. '
+                'It is provided for reference and improvement purposes only. '
+                'Please have this reviewed by a qualified attorney before signing.</i>',
                 styles['Normal']
             )
-            elements.append(disclaimer)
+            elements.append(disclaimer_title)
+            elements.append(Spacer(1, 6))
+            elements.append(disclaimer_text)
             
             # Build PDF
             doc.build(elements)
-            logger.info(f"Generated PDF report: {output_path}")
+            logger.info(f"✅ Generated refined contract PDF: {output_path}")
             return output_path
             
         except Exception as e:
-            logger.error(f"Failed to generate PDF report: {e}")
+            logger.error(f"Failed to generate refined contract PDF: {e}")
             raise
 
 
