@@ -104,3 +104,6 @@ data/legal_docs/*
 
 # rough idea (draft)
 idea
+
+# Docker
+docker-compose.override.yml

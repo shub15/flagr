@@ -22,6 +22,30 @@ A parallel multi-agent system for intelligent contract review using FastAPI, imp
 
 ### Installation
 
+#### Option 1: Docker (Recommended)
+
+```bash
+# Quick start (Windows)
+.\docker-start.ps1
+
+#Quick start (Linux/Mac)
+chmod +x docker-start.sh && ./docker-start.sh
+
+# Manual setup
+cp .env.example .env
+# Edit .env with your API keys
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+Access API at: http://localhost:8000/docs
+
+See [DOCKER.md](DOCKER.md) for detailed deployment guide.
+
+#### Option 2: Local Development
+
 ```bash
 # Install dependencies
 pip install -r requirements.txt

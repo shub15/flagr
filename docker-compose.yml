@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: legal_advisor_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-legal_advisor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_production}
+      POSTGRES_DB: ${POSTGRES_DB:-legal_advisor}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-legal_advisor}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - legal_advisor_network
+
+  # Legal Advisor API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: legal_advisor_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Database
+      DATABASE_URL: postgresql://${POSTGRES_USER:-legal_advisor}:${POSTGRES_PASSWORD:-change_me_in_production}@postgres:5432/${POSTGRES_DB:-legal_advisor}
+      
+      # API Keys (load from .env)
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+      GROK_API_KEY: ${GROK_API_KEY:-}
+      PINECONE_API_KEY: ${PINECONE_API_KEY}
+      
+      # Pinecone Config
+      PINECONE_ENVIRONMENT: ${PINECONE_ENVIRONMENT}
+      PINECONE_INDEX_NAME: ${PINECONE_INDEX_NAME:-indian-labour-law}
+      
+      # LLM Models
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-4-turbo-preview}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-1.5-flash}
+      GROK_MODEL: ${GROK_MODEL:-grok-beta}
+      
+      # Application Settings
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      
+      # Council Settings
+      COUNCIL_CONSENSUS_THRESHOLD: ${COUNCIL_CONSENSUS_THRESHOLD:-0.6}
+      LLM_TIMEOUT_SECONDS: ${LLM_TIMEOUT_SECONDS:-60}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      
+      # RAG Settings
+      RAG_CHUNK_SIZE: ${RAG_CHUNK_SIZE:-500}
+      RAG_CHUNK_OVERLAP: ${RAG_CHUNK_OVERLAP:-50}
+      RAG_TOP_K: ${RAG_TOP_K:-3}
+      
+    volumes:
+      - ./data/legal_docs:/app/data/legal_docs
+      - ./data/temp_uploads:/app/data/temp_uploads
+      - ./data/exports:/app/data/exports
+      - ./data/reference_playbooks:/app/data/reference_playbooks
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - legal_advisor_network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  legal_advisor_network:
+    driver: bridge
