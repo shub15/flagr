@@ -21,6 +21,21 @@ logger = logging.getLogger(__name__)
 class ExportService:
     """Service for exporting refined contracts to various formats."""
     
+    def _convert_markdown_to_html(self, text: str) -> str:
+        """Convert markdown formatting to HTML tags for PDF rendering."""
+        import re
+        
+        # Convert **bold** to <b>bold</b>
+        text = re.sub(r'\*\*(.+?)\*\*', r'<b>\1</b>', text)
+        
+        # Convert *italic* to <i>italic</i> (but not ** which is already handled)
+        text = re.sub(r'(?<!\*)\*(?!\*)(.+?)\*(?!\*)', r'<i>\1</i>', text)
+        
+        # Convert _italic_ to <i>italic</i>
+        text = re.sub(r'_(.+?)_', r'<i>\1</i>', text)
+        
+        return text
+    
     def generate_refined_contract_docx(
         self,
         refined_contract: str,
@@ -189,13 +204,16 @@ class ExportService:
             paragraphs = refined_contract.split('\n\n')
             for para in paragraphs:
                 if para.strip():
+                    # Convert markdown to HTML
+                    para_html = self._convert_markdown_to_html(para.strip())
+                    
                     # Simple formatting
                     if para.strip().isupper() and len(para.strip()) < 100:
                         # Heading
-                        elements.append(Paragraph(f"<b>{para.strip()}</b>", styles['Heading3']))
+                        elements.append(Paragraph(f"<b>{para_html}</b>", styles['Heading3']))
                     else:
                         # Normal paragraph
-                        elements.append(Paragraph(para.strip(), body_style))
+                        elements.append(Paragraph(para_html, body_style))
             
             # Footer disclaimer
             elements.append(Spacer(1, 30))
