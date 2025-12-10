@@ -58,6 +58,20 @@ class ContractReviewResult(BaseModel):
     total_findings: int
     created_at: datetime = Field(default_factory=datetime.utcnow)
     
+    # Annotated PDF fields
+    annotated_pdf_url: Optional[str] = Field(
+        None,
+        description="URL/path to download the annotated PDF with highlights"
+    )
+    annotation_map: Optional[dict] = Field(
+        None,
+        description="Map of point IDs to review data for interactive PDF"
+    )
+    annotation_stats: Optional[dict] = Field(
+        None,
+        description="Statistics about PDF annotations (highlights added, points found, etc.)"
+    )
+    
     class Config:
         json_schema_extra = {
             "example": {
@@ -75,7 +89,15 @@ class ContractReviewResult(BaseModel):
                 "good_points": [],
                 "negotiable_points": [],
                 "missing_points": [],
-                "total_findings": 1
+                "total_findings": 1,
+                "annotated_pdf_url": "/api/reviews/rev_123456/annotated-pdf",
+                "annotation_map": {
+                    "CRITICAL_0": {
+                        "category": "CRITICAL",
+                        "quote": "Employer may terminate without notice",
+                        "advice": "Request minimum 30-day notice period"
+                    }
+                }
             }
         }
 

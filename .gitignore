@@ -60,6 +60,7 @@ logs/
 data/temp_uploads/
 data/exports/
 data/vectordb/
+data/annotated_pdfs/
 
 # Testing
 .pytest_cache/

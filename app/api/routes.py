@@ -99,10 +99,18 @@ async def review_contract(
             contract_text = image_processor.extract_text_from_image(str(temp_file_path))
             logger.info(f"Extracted {len(contract_text)} chars from image via Gemini Vision")
         
-        # Clean up temp file
-        temp_file_path.unlink()
+        # Clean up temp file (but keep PDF for annotation)
+        pdf_file_for_annotation = None
+        if file_type == "pdf":
+            # Keep the PDF file for annotation
+            pdf_file_for_annotation = temp_file_path
+        else:
+            # Delete non-PDF temp files
+            temp_file_path.unlink()
         
         if not contract_text or len(contract_text) < 50:
+            if pdf_file_for_annotation:
+                pdf_file_for_annotation.unlink()
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Failed to extract meaningful text from {file_type.upper()}. File may be empty or corrupted."
@@ -113,6 +121,50 @@ async def review_contract(
             contract_text=contract_text,
             contract_type=contract_type
         )
+        
+        # Generate annotated PDF if input was PDF
+        if pdf_file_for_annotation:
+            try:
+                from app.services.pdf_annotator import pdf_annotator
+                
+                # Create annotated PDF directory
+                annotated_dir = Path("data/annotated_pdfs")
+                annotated_dir.mkdir(parents=True, exist_ok=True)
+                
+                annotated_pdf_path = annotated_dir / f"{result.review_id}_annotated.pdf"
+                
+                # Get all points with quotes for annotation
+                all_review_points = (
+                    result.critical_points +
+                    result.good_points +
+                    result.negotiable_points +
+                    result.missing_points
+                )
+                
+                # Annotate PDF
+                annotation_stats = pdf_annotator.annotate_pdf(
+                    input_pdf_path=str(pdf_file_for_annotation),
+                    output_pdf_path=str(annotated_pdf_path),
+                    review_points=all_review_points
+                )
+                
+                # Create annotation map
+                annotation_map = pdf_annotator.create_annotation_map(all_review_points)
+                
+                # Add to result
+                result.annotated_pdf_url = f"/api/reviews/{result.review_id}/annotated-pdf"
+                result.annotation_map = annotation_map
+                result.annotation_stats = annotation_stats
+                
+                logger.info(f"Annotated PDF created: {annotation_stats['highlights_added']} highlights")
+                
+            except Exception as e:
+                logger.error(f"PDF annotation failed (continuing without it): {e}")
+                # Continue without annotated PDF
+            finally:
+                # Clean up original uploaded PDF
+                if pdf_file_for_annotation.exists():
+                    pdf_file_for_annotation.unlink()
         
         # Save to database
         db_review = ContractReview(
@@ -377,6 +429,44 @@ async def get_review(review_id: str, db: Session = Depends(get_db)) -> ContractR
         total_findings=review.total_findings,
         created_at=review.created_at
     )
+
+
+@router.get("/reviews/{review_id}/annotated-pdf")
+async def get_annotated_pdf(review_id: str) -> FileResponse:
+    """
+    Download the annotated PDF with color-coded highlights.
+    
+    Highlights are clickable and show the corresponding review point.
+    - RED highlights = CRITICAL issues
+    - ORANGE highlights = NEGOTIABLE terms
+    - GREEN highlights = GOOD points
+    """
+    try:
+        annotated_pdf_path = Path("data/annotated_pdfs") / f"{review_id}_annotated.pdf"
+        
+        if not annotated_pdf_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Annotated PDF not found for review: {review_id}. Only PDF uploads generate annotated PDFs."
+            )
+        
+        return FileResponse(
+            path=str(annotated_pdf_path),
+            filename=f"{review_id}_annotated.pdf",
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f"inline; filename={review_id}_annotated.pdf"
+            }
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to retrieve annotated PDF: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retrieve annotated PDF: {str(e)}"
+        )
 
 
 @router.post("/reviews/{review_id}/export/docx")
