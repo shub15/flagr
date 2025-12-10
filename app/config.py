@@ -12,8 +12,9 @@ class Settings(BaseSettings):
     
     # LLM API Keys
     openai_api_key: str
-    google_api_key: str
-    grok_api_key: Optional[str] = None
+    google_api_key: str  # For Gemini (Referee)
+    groq_api_key: Optional[str] = None  # Groq (fast inference)
+    mistral_api_key: Optional[str] = None  # Mistral AI
     
     # Vector Database (Pinecone)
     pinecone_api_key: str
@@ -25,13 +26,22 @@ class Settings(BaseSettings):
     
     # LLM Model Configuration
     openai_model: str = "gpt-4-turbo-preview"
-    gemini_model: str = "gemini-pro"
-    grok_model: str = "grok-beta"
+    mistral_model: str = "mistral-large-latest"  # For council
+    groq_model: str = "llama-3.1-70b-versatile"  # For council
+    gemini_model: str = "gemini-1.5-flash"  # For Referee only
     
     # Council Settings
     council_consensus_threshold: float = 0.6
     llm_timeout_seconds: int = 30
     max_retries: int = 3
+    
+    # Rate Limiting (to avoid 429 errors)
+    enable_openai: bool = True
+    enable_mistral: bool = True  # Mistral AI for council
+    enable_groq: bool = False  # Groq (fast inference) - disable by default
+    max_concurrent_llm_calls: int = 3  # Limit concurrent calls
+    retry_delay_seconds: int = 2  # Delay between retries
+    exponential_backoff: bool = True  # Use exponential backoff on retries
     
     # Application
     debug: bool = False
