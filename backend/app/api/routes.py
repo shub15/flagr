@@ -621,10 +621,14 @@ async def export_review_word(
 @router.get("/reviews/{review_id}/export/pdf")
 async def export_review_pdf(
     review_id: str,
+    mode: str = "balanced",
     db: Session = Depends(get_db)
-) -> FileResponse:
+):
     """
-    Export contract review as PDF summary report.
+    Export refined contract as PDF.
+    
+    Args:
+        mode: Refinement mode - 'balanced' (fair to both) or 'unilateral' (employee-favoring)
     """
     try:
         # Get review from database

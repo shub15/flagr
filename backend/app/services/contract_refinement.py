@@ -24,7 +24,8 @@ class ContractRefinementService:
         critical_points: List[ReviewPoint],
         missing_points: List[ReviewPoint],
         negotiable_points: List[ReviewPoint],
-        safety_score: int
+        safety_score: int,
+        refinement_mode: str = "balanced"
     ) -> str:
         """
         Generate a refined contract by applying all recommendations.
@@ -40,7 +41,32 @@ class ContractRefinementService:
         missing_clauses = "\n".join([f"- ADD: {p.advice}" for p in missing_points[:10]])
         improvements = "\n".join([f"- IMPROVE: {p.advice}" for p in negotiable_points[:8]])
         
+        # Mode-specific instructions
+        if refinement_mode == "unilateral":
+            mode_instruction = """
+REFINEMENT MODE: UNILATERAL (Employee-Favoring)
+- Maximize employee protections and benefits
+- Add strong termination safeguards (notice periods, severance)
+- Include comprehensive leave policies
+- Enforce strict non-compete limits
+- Add dispute resolution favorable to employee
+- Strengthen intellectual property rights for employee
+- Include benefits and compensation protections
+"""
+        else:  # balanced
+            mode_instruction = """
+REFINEMENT MODE: BALANCED (Fair to Both Parties)
+- Create fair terms for both employer and employee
+- Balance flexibility with security
+- Reasonable notice periods and termination clauses
+- Standard industry practices for leave and benefits
+- Mutually reasonable non-compete and IP clauses
+- Fair dispute resolution mechanisms
+"""
+        
         prompt = f"""You are a legal expert tasked with refining an employment contract.
+
+{mode_instruction}
 
 ORIGINAL CONTRACT:
 {original_contract}
@@ -56,10 +82,10 @@ NEGOTIABLE IMPROVEMENTS ({len(negotiable_points)} total):
 
 TASK:
 Generate an improved version of this contract that:
-1. Fixes all critical issues
-2. Adds all missing clauses
-3. Implements negotiable improvements
-4. Maintains the original structure and tone
+1. Fixes all critical issues according to the refinement mode
+2. Adds all missing clauses with appropriate terms
+3. Implements negotiable improvements based on the mode
+4. Maintains the original structure and professional tone
 5. Keeps all good existing clauses
 6. Uses proper legal formatting
 
@@ -69,6 +95,7 @@ IMPORTANT:
 - Maintain professional legal language
 - Keep the contract concise and clear
 - Add section headings where appropriate
+- Apply the {refinement_mode.upper()} mode principles throughout
 
 REFINED CONTRACT:"""
         
