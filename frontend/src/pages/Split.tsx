@@ -418,9 +418,9 @@ function Split() {
                                         </button>
                                         <button
                                             onClick={() => {
-                                                if (currentReviewId) {
-                                                    window.open(`http://localhost:8000/api/reviews/${currentReviewId}/export/pdf`, '_blank');
-                                                }
+                                                setShowRefineInput(true);
+                                                setShowCorrectionInput(false);
+                                                setCorrectionText('');
                                             }}
                                             className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all flex items-center justify-center gap-2"
                                         >
@@ -491,8 +491,10 @@ function Split() {
                                                 onChange={(e) => setRefineText(e.target.value)}
                                             />
                                             <button
-                                                onClick={async () => {
-                                                    await downloadRefinedPdf();
+                                                onClick={() => {
+                                                    if (currentReviewId) {
+                                                        window.open(`http://localhost:8000/api/reviews/${currentReviewId}/export/pdf`, '_blank');
+                                                    }
                                                     setRefineChoice('');
                                                     setRefineText('');
                                                     setShowRefineInput(false);
