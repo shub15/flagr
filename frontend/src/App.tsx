@@ -50,6 +50,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
           <Route path="/split" element={<ProtectedRoute><Split /></ProtectedRoute>} />
+          <Route path="/split/:reviewId" element={<ProtectedRoute><Split /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>

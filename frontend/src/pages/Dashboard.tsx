@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-    Scale,
     Bell,
     ChevronDown,
     Search,
@@ -15,14 +15,80 @@ import {
     Sparkles,
     Lock,
     Clock,
-    Plus
+    Plus,
+    AlertCircle
 } from 'lucide-react';
+import api from '../services/api';
+
+interface Review {
+    review_id: string;
+    contract_type: string;
+    safety_score: number;
+    total_findings: number;
+    critical_count: number;
+    good_count: number;
+    negotiable_count: number;
+    missing_count: number;
+    created_at: string;
+}
 
 const Dashboard = () => {
+    const navigate = useNavigate();
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [activeFilter, setActiveFilter] = useState('all');
     const [selectedDocType, setSelectedDocType] = useState('nda');
     const [contextOpen, setContextOpen] = useState(false);
+
+    // Reviews state
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [loadingReviews, setLoadingReviews] = useState(true);
+    const [reviewsError, setReviewsError] = useState<string | null>(null);
+
+    // Fetch reviews on component mount
+    useEffect(() => {
+        const fetchReviews = async () => {
+            try {
+                setLoadingReviews(true);
+                const response = await api.get('/api/reviews');
+                setReviews(response.data);
+                setReviewsError(null);
+            } catch (err: any) {
+                console.error('Error fetching reviews:', err);
+                setReviewsError(err.response?.data?.detail || 'Failed to load reviews');
+            } finally {
+                setLoadingReviews(false);
+            }
+        };
+
+        fetchReviews();
+    }, []);
+
+    // Helper function to get risk level based on safety score
+    const getRiskLevel = (score: number) => {
+        if (score >= 80) return { label: 'Low Risk', bg: 'bg-[#DCFCE7]', text: 'text-[#166534]', border: 'border-[#BBF7D0]' };
+        if (score >= 60) return { label: 'Medium Risk', bg: 'bg-[#FEF3C7]', text: 'text-[#92400E]', border: 'border-[#FDE68A]' };
+        return { label: 'High Risk', bg: 'bg-[#FFE4E6]', text: 'text-[#9F1239]', border: 'border-[#FECDD3]' };
+    };
+
+    // Helper function to format time ago
+    const getTimeAgo = (dateString: string) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 60) return `${diffMins} min${diffMins !== 1 ? 's' : ''} ago`;
+        if (diffHours < 24) return `${diffHours} hr${diffHours !== 1 ? 's' : ''} ago`;
+        if (diffDays < 7) return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`;
+        return date.toLocaleDateString();
+    };
+
+    // Helper function to navigate to review
+    const handleReviewClick = (reviewId: string) => {
+        navigate(`/split/${reviewId}`);
+    };
 
     return (
         <div className="min-h-screen flex flex-col">
@@ -157,92 +223,88 @@ const Dashboard = () => {
                             <div className="col-span-1 text-right">Action</div>
                         </div>
 
-                        {/* ROW 1: COMPLETED, HIGH RISK */}
-                        <div className="history-row bg-white/60 border border-gray-100 rounded-xl p-4 grid grid-cols-12 items-center mb-3 cursor-pointer group">
-                            <div className="col-span-5 flex items-start gap-3">
-                                <div className="w-10 h-10 bg-white border border-gray-100 rounded-lg flex items-center justify-center text-gray-500 shadow-sm">
-                                    <FileText className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                        Vendor MSA - Acme Corp
-                                    </h3>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">MSA • Acme Corp • 2 hrs ago</p>
-                                </div>
+                        {/* Dynamic Review Rows */}
+                        {loadingReviews ? (
+                            // Loading State
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <Loader2 className="w-8 h-8 animate-spin text-gray-400 mb-3" />
+                                <p className="text-sm text-gray-500">Loading reviews...</p>
                             </div>
-                            <div className="col-span-3">
-                                <span className="inline-flex items-center gap-1.5 bg-[#FFE4E6] text-[#9F1239] px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[#FECDD3]">
-                                    High Risk
-                                </span>
-                                <div className="text-[10px] text-gray-400 mt-1 pl-1">72% Confidence</div>
+                        ) : reviewsError ? (
+                            // Error State
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <AlertCircle className="w-8 h-8 text-red-400 mb-3" />
+                                <p className="text-sm text-gray-600 mb-2">Failed to load reviews</p>
+                                <p className="text-xs text-gray-400">{reviewsError}</p>
                             </div>
-                            <div className="col-span-3 flex gap-2">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE4E6] text-[#9F1239] text-[10px] font-bold border border-[#FECDD3]" title="Critical">2</span>
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10px] font-bold border border-[#FDE68A]" title="Risks">5</span>
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#DCFCE7] text-[#166534] text-[10px] font-bold border border-[#BBF7D0]" title="Good">1</span>
+                        ) : reviews.length === 0 ? (
+                            // Empty State
+                            <div className="flex flex-col items-center justify-center py-12">
+                                <FileText className="w-12 h-12 text-gray-300 mb-3" />
+                                <p className="text-sm text-gray-600 mb-2">No reviews yet</p>
+                                <p className="text-xs text-gray-400">Upload a document to get started</p>
                             </div>
-                            <div className="col-span-1 flex justify-end">
-                                <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-gray-100 rounded-full">
-                                    <ArrowRight className="w-4 h-4 text-gray-600" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* ROW 2: COMPLETED, LOW RISK */}
-                        <div className="history-row bg-white/60 border border-gray-100 rounded-xl p-4 grid grid-cols-12 items-center mb-3 cursor-pointer group">
-                            <div className="col-span-5 flex items-start gap-3">
-                                <div className="w-10 h-10 bg-white border border-gray-100 rounded-lg flex items-center justify-center text-gray-500 shadow-sm">
-                                    <FileCheck className="w-5 h-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                        Employment Agreement
-                                    </h3>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">HR • Internal • Yesterday</p>
-                                </div>
-                            </div>
-                            <div className="col-span-3">
-                                <span className="inline-flex items-center gap-1.5 bg-[#DCFCE7] text-[#166534] px-2.5 py-1 rounded-md text-[11px] font-semibold border border-[#BBF7D0]">
-                                    Low Risk
-                                </span>
-                                <div className="text-[10px] text-gray-400 mt-1 pl-1">94% Confidence</div>
-                            </div>
-                            <div className="col-span-3 flex gap-2">
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-300 text-[10px] font-bold border border-gray-200">0</span>
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10px] font-bold border border-[#FDE68A]">1</span>
-                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#DCFCE7] text-[#166534] text-[10px] font-bold border border-[#BBF7D0]">8</span>
-                            </div>
-                            <div className="col-span-1 flex justify-end">
-                                <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-gray-100 rounded-full">
-                                    <ArrowRight className="w-4 h-4 text-gray-600" />
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* ROW 3: IN PROGRESS */}
-                        <div className="history-row bg-white/60 border border-gray-100 rounded-xl p-4 grid grid-cols-12 items-center mb-3 cursor-pointer group">
-                            <div className="col-span-5 flex items-start gap-3">
-                                <div className="w-10 h-10 bg-white border border-gray-100 rounded-lg flex items-center justify-center text-gray-400 shadow-sm relative overflow-hidden">
-                                    <div className="absolute inset-0 bg-gray-50 animate-pulse"></div>
-                                    <Loader2 className="w-5 h-5 animate-spin relative z-10" />
-                                </div>
-                                <div>
-                                    <h3 className="text-sm font-semibold text-gray-900">Project Alpha NDA</h3>
-                                    <p className="text-[11px] text-gray-500 mt-0.5">NDA • Pending • Just now</p>
-                                </div>
-                            </div>
-                            <div className="col-span-3">
-                                <span className="inline-flex items-center gap-1.5 bg-gray-100 text-gray-500 px-2.5 py-1 rounded-md text-[11px] font-medium border border-gray-200">
-                                    Analysing...
-                                </span>
-                            </div>
-                            <div className="col-span-3 flex gap-2 opacity-50">
-                                <div className="h-6 w-6 rounded-full bg-gray-100"></div>
-                                <div className="h-6 w-6 rounded-full bg-gray-100"></div>
-                                <div className="h-6 w-6 rounded-full bg-gray-100"></div>
-                            </div>
-                            <div className="col-span-1 flex justify-end"></div>
-                        </div>
+                        ) : (
+                            // Review List
+                            reviews.map((review) => {
+                                const riskLevel = getRiskLevel(review.safety_score);
+                                return (
+                                    <div
+                                        key={review.review_id}
+                                        onClick={() => handleReviewClick(review.review_id)}
+                                        className="history-row bg-white/60 border border-gray-100 rounded-xl p-4 grid grid-cols-12 items-center mb-3 cursor-pointer group"
+                                    >
+                                        <div className="col-span-5 flex items-start gap-3">
+                                            <div className="w-10 h-10 bg-white border border-gray-100 rounded-lg flex items-center justify-center text-gray-500 shadow-sm">
+                                                <FileCheck className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                                    {review.contract_type.toUpperCase()} Contract
+                                                </h3>
+                                                <p className="text-[11px] text-gray-500 mt-0.5">
+                                                    {review.contract_type} • {getTimeAgo(review.created_at)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-3">
+                                            <span className={`inline-flex items-center gap-1.5 ${riskLevel.bg} ${riskLevel.text} px-2.5 py-1 rounded-md text-[11px] font-semibold border ${riskLevel.border}`}>
+                                                {riskLevel.label}
+                                            </span>
+                                            <div className="text-[10px] text-gray-400 mt-1 pl-1">Score: {review.safety_score}</div>
+                                        </div>
+                                        <div className="col-span-3 flex gap-2">
+                                            {review.critical_count > 0 ? (
+                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FFE4E6] text-[#9F1239] text-[10px] font-bold border border-[#FECDD3]" title="Critical">
+                                                    {review.critical_count}
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-300 text-[10px] font-bold border border-gray-200">0</span>
+                                            )}
+                                            {review.negotiable_count > 0 ? (
+                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#FEF3C7] text-[#92400E] text-[10px] font-bold border border-[#FDE68A]" title="Negotiable">
+                                                    {review.negotiable_count}
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-300 text-[10px] font-bold border border-gray-200">0</span>
+                                            )}
+                                            {review.good_count > 0 ? (
+                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#DCFCE7] text-[#166534] text-[10px] font-bold border border-[#BBF7D0]" title="Good">
+                                                    {review.good_count}
+                                                </span>
+                                            ) : (
+                                                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-300 text-[10px] font-bold border border-gray-200">0</span>
+                                            )}
+                                        </div>
+                                        <div className="col-span-1 flex justify-end">
+                                            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-gray-100 rounded-full">
+                                                <ArrowRight className="w-4 h-4 text-gray-600" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
 
                     </div>
                 </section>

@@ -1,16 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import {
     Check,
     ShieldAlert,
     Coins,
-    ChevronLeft,
-    ChevronRight,
-    Search,
     Wand2,
     Plus
 } from 'lucide-react';
 import api from '../services/api';
+import { config } from '../config';
 
 interface Step {
     label: string;
@@ -20,6 +18,8 @@ interface Step {
 
 function Split() {
     const location = useLocation();
+    const { reviewId } = useParams<{ reviewId: string }>();
+    const navigate = useNavigate();
     const { file, purpose, context } = location.state || {};
 
     const [showResults, setShowResults] = useState(false);
@@ -36,9 +36,36 @@ function Split() {
     const [apiComplete, setApiComplete] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
 
+    // Review data from API
+    const [reviewData, setReviewData] = useState<any>(null);
+    const [activeTab, setActiveTab] = useState<'critical' | 'good' | 'missing' | 'negotiable'>('critical');
+
     // Make API call on component mount
     useEffect(() => {
         const makeApiCall = async () => {
+            // If reviewId is in URL, fetch existing review
+            if (reviewId) {
+                try {
+                    const response = await api.get(`/api/reviews/${reviewId}`);
+                    console.log('Fetched review:', response.data);
+
+                    // Store review data
+                    setReviewData(response.data);
+                    setApiComplete(true);
+
+                    // Skip animation, go straight to results
+                    setCurrentStepIndex(steps.length - 1);
+                    setSteps(prevSteps => prevSteps.map(step => ({ ...step, status: 'complete' })));
+                    setShowResults(true);
+                } catch (err: any) {
+                    console.error('Error fetching review:', err);
+                    setApiError(err.response?.data?.detail || 'Failed to fetch review');
+                    setApiComplete(true);
+                }
+                return;
+            }
+
+            // Otherwise, create new review from uploaded file
             if (!file) {
                 setApiError('No file provided');
                 setApiComplete(true);
@@ -60,7 +87,14 @@ function Split() {
                 });
 
                 console.log('Review response:', response.data);
+
+                // Store review data
+                const newReviewId = response.data.review_id;
+                setReviewData(response.data);
                 setApiComplete(true);
+
+                // Update URL to include review_id (without triggering re-render)
+                window.history.replaceState(null, '', `/split/${newReviewId}`);
             } catch (err: any) {
                 console.error('Error generating review:', err);
                 setApiError(err.response?.data?.detail || 'Failed to generate review');
@@ -69,7 +103,7 @@ function Split() {
         };
 
         makeApiCall();
-    }, [file, purpose, context]);
+    }, [reviewId, file, purpose, context, steps.length]);
 
     // Handle step-by-step animation with delays
     useEffect(() => {
@@ -77,6 +111,12 @@ function Split() {
 
         const interval = setInterval(() => {
             setCurrentStepIndex((prevIndex) => {
+                // If we are already at the last step (e.g. from API completion), stop
+                if (prevIndex >= steps.length - 1) {
+                    clearInterval(interval);
+                    return prevIndex;
+                }
+
                 const newIndex = prevIndex + 1;
 
                 // Check if we're at the last step
@@ -130,19 +170,27 @@ function Split() {
         }
     }, [apiComplete, currentStepIndex, steps.length]);
 
-    const highlightPdf = (citationId: string) => {
-        const target = document.getElementById(citationId + '-target');
-        if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            target.style.transform = 'scale(1.02)';
+    // Helper function to get findings for active tab
+    const getActiveFindings = () => {
+        if (!reviewData) return [];
+        switch (activeTab) {
+            case 'critical': return reviewData.critical_points || [];
+            case 'good': return reviewData.good_points || [];
+            case 'missing': return reviewData.missing_points || [];
+            case 'negotiable': return reviewData.negotiable_points || [];
+            default: return [];
         }
     };
 
-    const removeHighlight = (citationId: string) => {
-        const target = document.getElementById(citationId + '-target');
-        if (target) {
-            target.style.transform = 'scale(1)';
-        }
+    // Helper function to get color scheme for each category
+    const getCategoryColors = (category: string) => {
+        const colors = {
+            critical: { bg: 'bg-[#FFF1F2]', text: 'text-[#be123c]', border: 'border-[#FFE4E6]', leftBar: 'bg-[#FECDD3]' },
+            good: { bg: 'bg-[#F0FDF4]', text: 'text-[#15803D]', border: 'border-[#BBF7D0]', leftBar: 'bg-[#BBF7D0]' },
+            missing: { bg: 'bg-[#FEF3C7]', text: 'text-[#B45309]', border: 'border-[#FDE68A]', leftBar: 'bg-[#FDE68A]' },
+            negotiable: { bg: 'bg-[#EFF6FF]', text: 'text-[#1E40AF]', border: 'border-[#DBEAFE]', leftBar: 'bg-[#DBEAFE]' }
+        };
+        return colors[category as keyof typeof colors] || colors.critical;
     };
 
     const renderStepIcon = (step: Step, index: number) => {
@@ -249,101 +297,22 @@ function Split() {
                 <div className="flex-1 flex overflow-hidden">
                     {/* LEFT PANEL: PDF VIEWER (58%) */}
                     <div className="w-full md:w-[58%] bg-[#F5F5F4] flex flex-col relative border-r border-gray-200">
-                        {/* Minimal Toolbar */}
-                        <div className="h-14 bg-white/80 backdrop-blur border-b border-gray-200 flex items-center justify-between px-6 z-20">
-                            <div className="flex items-center gap-4 text-gray-400">
-                                <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-1 border border-gray-100">
-                                    <ChevronLeft className="w-3 h-3 cursor-pointer hover:text-black transition-colors" />
-                                    <span className="text-[10px] font-mono text-gray-600">Pg 1 / 5</span>
-                                    <ChevronRight className="w-3 h-3 cursor-pointer hover:text-black transition-colors" />
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-yellow-200"></div>
-                                    <span className="text-[10px] text-gray-500 font-medium">Citations On</span>
-                                </div>
-                                <Search className="w-4 h-4 text-gray-400 hover:text-black cursor-pointer transition-colors" />
-                            </div>
-                        </div>
+
 
                         {/* PDF Canvas */}
-                        <div className="flex-1 overflow-y-auto custom-scroll p-8 flex justify-center scroll-smooth">
-                            <div className="bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] w-full max-w-[700px] min-h-[1000px] p-12 text-justify relative border border-gray-100">
-                                {/* Header */}
-                                <div className="flex justify-between items-end border-b border-gray-900 pb-6 mb-10">
-                                    <h1 className="text-xl font-serif font-bold tracking-wide text-black">
-                                        MASTER SERVICES AGREEMENT
-                                    </h1>
-                                    <span className="text-[10px] font-mono text-gray-400 uppercase">Ref: 2024-OV-88</span>
+                        <div className="flex-1 overflow-y-auto custom-scroll bg-gray-100">
+                            {(reviewId || reviewData?.review_id) ? (
+                                <iframe
+                                    src={`${config.apiBaseUrl}/api/reviews/${reviewId || reviewData?.review_id}/annotated-pdf`}
+                                    className="w-full h-full border-0"
+                                    style={{ minHeight: '800px' }}
+                                    title="Annotated PDF"
+                                />
+                            ) : (
+                                <div className="flex items-center justify-center h-full">
+                                    <p className="text-gray-400 text-sm">Loading annotated PDF...</p>
                                 </div>
-
-                                {/* Document Text */}
-                                <div className="space-y-8 text-[12px] leading-[1.8] text-gray-700 font-serif">
-                                    <p>
-                                        This Master Services Agreement ("Agreement") is entered into as of{' '}
-                                        <span className="bg-gray-100 px-1 rounded">[Date]</span>, by and between the parties listed below.
-                                    </p>
-
-                                    <div>
-                                        <h4 className="font-bold text-black uppercase text-[10px] tracking-widest mb-2">1. Services</h4>
-                                        <p>
-                                            Provider agrees to perform the services described in one or more Statements of Work attached
-                                            hereto as Exhibit A.
-                                        </p>
-                                    </div>
-
-                                    {/* Section with Highlight */}
-                                    <div id="citation-2-target" className="transition-all duration-700 rounded px-2 -mx-2">
-                                        <h4 className="font-bold text-black uppercase text-[10px] tracking-widest mb-2">
-                                            4. Term and Termination
-                                        </h4>
-                                        <p>
-                                            The term of this Agreement shall commence on the Effective Date and continue for a period of two
-                                            (2) years.{' '}
-                                            <span className="bg-[#FEF3C7] border-b border-[#F59E0B] text-black">
-                                                This Agreement shall automatically renew for successive one-year terms unless either party
-                                                provides written notice.
-                                            </span>
-                                        </p>
-                                    </div>
-
-                                    {/* Critical Highlight */}
-                                    <div id="citation-1-target" className="transition-all duration-700 rounded px-2 -mx-2">
-                                        <h4 className="font-bold text-black uppercase text-[10px] tracking-widest mb-2">
-                                            8. Indemnification
-                                        </h4>
-                                        <p>
-                                            Client agrees to indemnify, defend, and hold harmless Provider from any claims arising out of
-                                            Client's use of services.{' '}
-                                            <span className="bg-[#FFE4E6] border-b border-[#E11D48] text-black font-medium">
-                                                Provider's total liability under this agreement regarding any claim shall not exceed the total
-                                                fees paid by Client in the preceding twelve (12) months.
-                                            </span>{' '}
-                                            However, Client's liability for indemnification shall remain unlimited.
-                                        </p>
-                                    </div>
-
-                                    <div>
-                                        <h4 className="font-bold text-black uppercase text-[10px] tracking-widest mb-2">
-                                            9. Confidentiality
-                                        </h4>
-                                        <p>
-                                            Each party agrees to hold the other party's Confidential Information in strict confidence and not
-                                            to disclose such information to any third party without prior written consent.
-                                        </p>
-                                    </div>
-
-                                    {/* Blurred content */}
-                                    <div className="opacity-20 blur-[1px] select-none">
-                                        <p>
-                                            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut
-                                            labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris
-                                            nisi ut aliquip ex ea commodo consequat.
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
+                            )}
                         </div>
                     </div>
 
@@ -363,39 +332,52 @@ function Split() {
                                                 Final Verdict
                                             </span>
                                             <h2 className="font-serif text-4xl text-black mt-2 leading-tight">
-                                                Balanced with
-                                                <br />
-                                                <span className="font-serif-italic text-gray-600">specific risks</span>
+                                                {reviewData?.summary || 'Analysis Complete'}
                                             </h2>
                                         </div>
                                         <div className="bg-black text-white text-xs font-medium px-4 py-1.5 rounded-full shadow-lg">
-                                            Score: 78
+                                            Score: {reviewData?.safety_score ?? '--'}
                                         </div>
                                     </div>
 
                                     <p className="text-sm text-gray-600 font-light leading-relaxed mb-6">
-                                        The agreement adheres to standard terms but contains{' '}
-                                        <span className="font-medium text-black">uncapped indemnity</span> and ambiguous IP clauses. We
-                                        recommend specific redlines before signing.
+                                        {reviewData?.detailed_summary || `We found ${reviewData?.total_findings || 0} points of interest in your document. Review the details below.`}
                                     </p>
 
-                                    {/* Tags */}
+                                    {/* Total Findings */}
                                     <div className="flex flex-wrap gap-2 mb-6">
-                                        <span className="px-3 py-1 bg-[#F5F5F4] text-gray-600 rounded-lg text-[11px] font-medium border border-gray-100">
-                                            Buyer-friendly
-                                        </span>
-                                        <span className="px-3 py-1 bg-[#FFF1F2] text-[#9F1239] rounded-lg text-[11px] font-medium border border-[#FFE4E6]">
-                                            Data Privacy Gaps
-                                        </span>
+                                        {(reviewData?.critical_points?.length || 0) > 0 && (
+                                            <span className="px-3 py-1 bg-[#FFF1F2] text-[#9F1239] rounded-lg text-[11px] font-medium border border-[#FFE4E6]">
+                                                {reviewData.critical_points.length} Critical
+                                            </span>
+                                        )}
+                                        {(reviewData?.good_points?.length || 0) > 0 && (
+                                            <span className="px-3 py-1 bg-[#F0FDF4] text-[#15803D] rounded-lg text-[11px] font-medium border border-[#BBF7D0]">
+                                                {reviewData.good_points.length} Good
+                                            </span>
+                                        )}
+                                        {(reviewData?.missing_points?.length || 0) > 0 && (
+                                            <span className="px-3 py-1 bg-[#FEF3C7] text-[#B45309] rounded-lg text-[11px] font-medium border border-[#FDE68A]">
+                                                {reviewData.missing_points.length} Missing
+                                            </span>
+                                        )}
+                                        {(reviewData?.negotiable_points?.length || 0) > 0 && (
+                                            <span className="px-3 py-1 bg-[#EFF6FF] text-[#1E40AF] rounded-lg text-[11px] font-medium border border-[#DBEAFE]">
+                                                {reviewData.negotiable_points.length} Negotiable
+                                            </span>
+                                        )}
                                     </div>
 
                                     {/* Action Buttons */}
                                     <div className="flex items-center gap-3">
-                                        <button className="flex-1 bg-[#166534] text-white text-xs font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all">
+                                        <button 
+                                            onClick={() => alert('Coming soon')}
+                                            className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all"
+                                        >
                                             Correct agent
                                         </button>
-                                        <button className="flex-1 bg-[#166534] text-white text-xs font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all flex items-center justify-center gap-2">
-                                            <Wand2 className="w-3 h-3" /> Refine contract
+                                        <button className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all flex items-center justify-center gap-2">
+                                            Refine contract
                                         </button>
                                     </div>
                                 </div>
@@ -405,66 +387,75 @@ function Split() {
                             <div className="mb-8">
                                 {/* Minimal Tabs */}
                                 <div className="flex gap-6 border-b border-gray-100 mb-6 pb-1">
-                                    <button className="text-sm font-medium text-black border-b border-black pb-1">Critical (1)</button>
-                                    <button className="text-sm font-medium text-gray-400 hover:text-gray-600 pb-1 transition-colors">
-                                        Negotiables (3)
+                                    <button
+                                        onClick={() => setActiveTab('critical')}
+                                        className={`text-sm font-medium pb-1 transition-colors ${activeTab === 'critical'
+                                            ? 'text-black border-b border-black'
+                                            : 'text-gray-400 hover:text-gray-600'
+                                            }`}
+                                    >
+                                        Critical ({reviewData?.critical_points?.length || 0})
                                     </button>
-                                    <button className="text-sm font-medium text-gray-400 hover:text-gray-600 pb-1 transition-colors">
-                                        Positives (4)
+                                    <button
+                                        onClick={() => setActiveTab('good')}
+                                        className={`text-sm font-medium pb-1 transition-colors ${activeTab === 'good'
+                                            ? 'text-black border-b border-black'
+                                            : 'text-gray-400 hover:text-gray-600'
+                                            }`}
+                                    >
+                                        Good ({reviewData?.good_points?.length || 0})
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('missing')}
+                                        className={`text-sm font-medium pb-1 transition-colors ${activeTab === 'missing'
+                                            ? 'text-black border-b border-black'
+                                            : 'text-gray-400 hover:text-gray-600'
+                                            }`}
+                                    >
+                                        Missing ({reviewData?.missing_points?.length || 0})
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveTab('negotiable')}
+                                        className={`text-sm font-medium pb-1 transition-colors ${activeTab === 'negotiable'
+                                            ? 'text-black border-b border-black'
+                                            : 'text-gray-400 hover:text-gray-600'
+                                            }`}
+                                    >
+                                        Negotiable ({reviewData?.negotiable_points?.length || 0})
                                     </button>
                                 </div>
 
                                 {/* Findings Cards */}
                                 <div className="space-y-4">
-                                    {/* Card 1 */}
-                                    <div
-                                        className="group bg-white border border-gray-100 rounded-xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)] hover:border-gray-200 transition-all cursor-pointer relative overflow-hidden"
-                                        onMouseEnter={() => highlightPdf('citation-1')}
-                                        onMouseLeave={() => removeHighlight('citation-1')}
-                                    >
-                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FECDD3]"></div>
+                                    {getActiveFindings().length > 0 ? (
+                                        getActiveFindings().map((finding: any, index: number) => {
+                                            const colors = getCategoryColors(activeTab);
+                                            return (
+                                                <div
+                                                    key={index}
+                                                    className="group bg-white border border-gray-100 rounded-xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)] hover:border-gray-200 transition-all cursor-pointer relative overflow-hidden"
+                                                >
+                                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${colors.leftBar}`}></div>
 
-                                        <div className="pl-2">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h3 className="font-medium text-black text-sm">Uncapped Indemnity</h3>
-                                                <span className="bg-[#FFF1F2] text-[#be123c] text-[10px] font-semibold px-2 py-0.5 rounded">
-                                                    CRITICAL
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-gray-500 font-light leading-relaxed mb-4">
-                                                The indemnity clause lacks a liability cap, exposing you to unlimited financial risk.
-                                            </p>
-                                            <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300">
-                                                <button className="text-[10px] font-medium text-black border-b border-black/20 hover:border-black">
-                                                    View citation
-                                                </button>
-                                                <button className="text-[10px] font-medium text-gray-400 hover:text-black transition-colors">
-                                                    Edit
-                                                </button>
-                                            </div>
+                                                    <div className="pl-2">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <h3 className="font-medium text-black text-sm pr-2">{finding.advice}</h3>
+                                                            <span className={`${colors.bg} ${colors.text} text-[10px] font-semibold px-2 py-0.5 rounded uppercase shrink-0`}>
+                                                                {activeTab}
+                                                            </span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-500 font-light leading-relaxed">
+                                                            {finding.quote ? `"${finding.quote}"` : ''}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="text-center py-8 text-gray-400 text-sm">
+                                            {reviewData ? `No ${activeTab} points found` : 'Loading findings...'}
                                         </div>
-                                    </div>
-
-                                    {/* Card 2 */}
-                                    <div
-                                        className="group bg-white border border-gray-100 rounded-xl p-5 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.04)] hover:border-gray-200 transition-all cursor-pointer relative overflow-hidden"
-                                        onMouseEnter={() => highlightPdf('citation-2')}
-                                        onMouseLeave={() => removeHighlight('citation-2')}
-                                    >
-                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FDE68A]"></div>
-
-                                        <div className="pl-2">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h3 className="font-medium text-black text-sm">Termination Convenience</h3>
-                                                <span className="bg-[#FFFBEB] text-[#B45309] text-[10px] font-semibold px-2 py-0.5 rounded">
-                                                    RISK
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-gray-500 font-light leading-relaxed">
-                                                Missing termination for convenience clause locks you into the full term.
-                                            </p>
-                                        </div>
-                                    </div>
+                                    )}
                                 </div>
                             </div>
 
