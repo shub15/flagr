@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
     Check,
     ShieldAlert,
@@ -9,6 +10,7 @@ import {
     Wand2,
     Plus
 } from 'lucide-react';
+import api from '../services/api';
 
 interface Step {
     label: string;
@@ -17,45 +19,116 @@ interface Step {
 }
 
 function Split() {
+    const location = useLocation();
+    const { file, purpose, context } = location.state || {};
+
     const [showResults, setShowResults] = useState(false);
     const [steps, setSteps] = useState<Step[]>([
-        { label: 'Retrieving resources', status: 'complete' },
-        { label: 'Parsing document structure', status: 'complete' },
-        { label: 'Risk Assessment (Agent 1)', status: 'active', detail: 'Analysing indemnities...' },
+        { label: 'Retrieving resources', status: 'pending' },
+        { label: 'Parsing document structure', status: 'pending' },
+        { label: 'Risk Assessment (Agent 1)', status: 'pending' },
         { label: 'Compliance Check (Agent 2)', status: 'pending' },
         { label: 'Financial Review (Agent 3)', status: 'pending' },
         { label: 'Final Judge Synthesis', status: 'pending' }
     ]);
-    const [currentStepIndex, setCurrentStepIndex] = useState(2);
+    const [currentStepIndex, setCurrentStepIndex] = useState(-1);
     const [logEntry, setLogEntry] = useState('Initializing neural council...');
+    const [apiComplete, setApiComplete] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
 
+    // Make API call on component mount
     useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentStepIndex((prevIndex) => {
-                if (prevIndex >= steps.length - 1) {
-                    clearInterval(interval);
-                    setTimeout(() => setShowResults(true), 500);
-                    return prevIndex;
+        const makeApiCall = async () => {
+            if (!file) {
+                setApiError('No file provided');
+                setApiComplete(true);
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('purpose', purpose || 'review');
+                if (context) {
+                    formData.append('context', context);
                 }
 
+                const response = await api.post('/api/review', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+
+                console.log('Review response:', response.data);
+                setApiComplete(true);
+            } catch (err: any) {
+                console.error('Error generating review:', err);
+                setApiError(err.response?.data?.detail || 'Failed to generate review');
+                setApiComplete(true);
+            }
+        };
+
+        makeApiCall();
+    }, [file, purpose, context]);
+
+    // Handle step-by-step animation with delays
+    useEffect(() => {
+        const STEP_DELAY = 2000; // 2 seconds between each step
+
+        const interval = setInterval(() => {
+            setCurrentStepIndex((prevIndex) => {
                 const newIndex = prevIndex + 1;
-                setSteps((prevSteps) => {
-                    const updated = [...prevSteps];
-                    updated[prevIndex].status = 'complete';
-                    if (newIndex < updated.length) {
+
+                // Check if we're at the last step
+                if (newIndex >= steps.length - 1) {
+                    // Start the final step but keep it loading until API completes
+                    setSteps((prevSteps) => {
+                        const updated = [...prevSteps];
+                        if (prevIndex >= 0 && prevIndex < updated.length) {
+                            updated[prevIndex].status = 'complete';
+                        }
                         updated[newIndex].status = 'active';
                         updated[newIndex].detail = 'Processing...';
                         setLogEntry(`> Processing ${updated[newIndex].label}...`);
+                        return updated;
+                    });
+                    clearInterval(interval);
+                    return newIndex;
+                }
+
+                // Normal step progression
+                setSteps((prevSteps) => {
+                    const updated = [...prevSteps];
+                    if (prevIndex >= 0) {
+                        updated[prevIndex].status = 'complete';
                     }
+                    updated[newIndex].status = 'active';
+                    updated[newIndex].detail = 'Processing...';
+                    setLogEntry(`> Processing ${updated[newIndex].label}...`);
                     return updated;
                 });
 
                 return newIndex;
             });
-        }, 1000);
+        }, STEP_DELAY);
 
         return () => clearInterval(interval);
     }, []);
+
+    // Complete final step when API is done
+    useEffect(() => {
+        if (apiComplete && currentStepIndex === steps.length - 1) {
+            setSteps((prevSteps) => {
+                const updated = [...prevSteps];
+                updated[steps.length - 1].status = 'complete';
+                delete updated[steps.length - 1].detail;
+                return updated;
+            });
+
+            // Show results after a short delay
+            setTimeout(() => setShowResults(true), 500);
+        }
+    }, [apiComplete, currentStepIndex, steps.length]);
 
     const highlightPdf = (citationId: string) => {
         const target = document.getElementById(citationId + '-target');
