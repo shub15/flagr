@@ -21,13 +21,17 @@ class Settings(BaseSettings):
     pinecone_environment: str
     pinecone_index_name: str = "indian-labour-law"
     
+    # Embeddings (Cohere as free fallback)
+    cohere_api_key: Optional[str] = None  # Free tier: Get from cohere.com
+    use_cohere_embeddings: bool = False  # Set to true to use Cohere instead of OpenAI
+    
     # Database
     database_url: str = "sqlite:///./legal_advisor.db"
     
     # LLM Model Configuration
     openai_model: str = "gpt-4-turbo-preview"
     mistral_model: str = "mistral-large-latest"  # For council
-    groq_model: str = "llama-3.1-70b-versatile"  # For council
+    groq_models: str = "llama-3.3-70b-versatile,qwen2.5-32b-instruct"  # Comma-separated for council
     gemini_model: str = "gemini-1.5-flash"  # For Referee only
     
     # Council Settings
@@ -56,6 +60,10 @@ class Settings(BaseSettings):
     rag_chunk_size: int = 500
     rag_chunk_overlap: int = 50
     rag_top_k: int = 3
+    
+    # Vector Database Settings
+    vector_upload_batch_size: int = 20  # Smaller batches to avoid rate limits
+    vector_upload_delay: float = 1.0  # Seconds between batches
     
     model_config = SettingsConfigDict(
         env_file=".env",

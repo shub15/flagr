@@ -184,7 +184,7 @@ class GroqClient(BaseLLMClient):
     
     def __init__(self):
         self.api_key = settings.groq_api_key
-        self.model = settings.groq_model
+        self.model = settings.groq_models
         self.base_url = "https://api.groq.com/openai/v1"
     
     @property
@@ -253,19 +253,33 @@ class MultiLLMService:
         # Council members (for agents)
         self.openai = OpenAIClient() if settings.enable_openai else None
         self.mistral = MistralClient() if settings.enable_mistral and settings.mistral_api_key else None
-        self.groq = GroqClient() if settings.enable_groq and settings.groq_api_key else None
+        
+        # Multiple Groq clients with different models
+        self.groq_clients = []
+        if settings.enable_groq and settings.groq_api_key:
+            groq_models = [m.strip() for m in settings.groq_models.split(',')]
+            for model_name in groq_models:
+                client = GroqClient()
+                client.model = model_name  # Override default model
+                self.groq_clients.append(client)
+                logger.info(f"✅ Added Groq client: {model_name}")
         
         # Referee (Gemini only - not in council)
         self.gemini_referee = GeminiClient()
         
-        # Only include enabled council clients
-        self.clients = [c for c in [self.openai, self.mistral, self.groq] if c is not None]
+        # Collect all enabled council clients
+        self.clients = []
+        if self.openai:
+            self.clients.append(self.openai)
+        if self.mistral:
+            self.clients.append(self.mistral)
+        self.clients.extend(self.groq_clients)  # Add all Groq clients
         
         # Semaphore to limit concurrent API calls (prevents rate limiting)
         self.semaphore = asyncio.Semaphore(settings.max_concurrent_llm_calls)
         
-        logger.info(f"MultiLLMService initialized with {len(self.clients)} council providers: {[c.provider_name for c in self.clients]}")
-        logger.info("Referee: Gemini (single LLM, no council)")
+        logger.info(f"🚀 MultiLLMService initialized with {len(self.clients)} council providers")
+        logger.info("🎯 Referee: Gemini (single LLM)")
     
     async def generate_with_retry(
         self,
