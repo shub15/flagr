@@ -1,0 +1,40 @@
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# LLM Clients
+openai==1.10.0
+google-generativeai==0.3.2
+httpx==0.26.0
+
+# Database
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# Vector Database
+pinecone-client==3.0.0
+
+# PDF Processing
+PyPDF2==3.0.1
+pdfplumber==0.10.3
+
+# DOCX Processing
+python-docx==1.1.0
+
+# Image Processing (Gemini Vision for OCR)
+Pillow==10.2.0
+
+# Export Generation
+reportlab==4.0.9
+
+# Embeddings & Utilities
+sentence-transformers==2.3.1
+tiktoken==0.5.2
+python-dotenv==1.0.0
+python-multipart==0.0.6
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3

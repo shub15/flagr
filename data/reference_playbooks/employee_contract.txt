@@ -1,0 +1,86 @@
+# Employee Contract Checklist - Reference Playbook for Strategist Agent
+
+## Essential Clauses
+
+### Job Details
+- Job title and detailed role description
+- Department and reporting structure
+- Probation period (typically 3-6 months as per Indian law)
+- Start date and work location
+
+### Compensation & Benefits
+- Base salary (monthly/annual)
+- Payment schedule (must be monthly as per Payment of Wages Act)
+- Overtime compensation policy
+- Annual increment structure
+- Bonus/performance incentives
+- Provident Fund (PF) - mandatory if company has 20+ employees
+- Employee State Insurance (ESI) - mandatory if salary < ₹21,000
+- Gratuity provisions (after 5 years as per Payment of Gratuity Act)
+- Health insurance coverage
+- Other benefits (food, transport, phone, internet)
+
+### Working Hours & Leave
+- Working hours per day/week (max 48 hours/week as per Factories Act)
+- Overtime rules and compensation
+- Paid leave entitlements:
+  - Casual Leave (CL)
+  - Sick Leave (SL)
+  - Earned Leave/Privilege Leave (EL/PL) - minimum 1 day per 20 days worked
+- Maternity Leave (26 weeks as per Maternity Benefit Act)
+- Paternity Leave
+- Public holidays
+
+### Termination & Notice
+- Notice period (both employer and employee) - typically 30-90 days
+- Grounds for termination
+- Severance/compensation on termination
+- Exit formalities and handover process
+
+### Intellectual Property
+- Ownership of work created during employment
+- Scope should be limited to work-related creation
+- Post-employment IP rights
+
+### Confidentiality & Non-Disclosure
+- Scope of confidential information (should be reasonable)
+- Duration of confidentiality obligations
+- Permitted disclosures
+
+### Non-Compete & Non-Solicitation
+- Geographic scope (should be reasonable)
+- Duration (typically 6-12 months, must not be unreasonable restraint of trade)
+- Activities restricted
+- Note: Must comply with Indian Contract Act Section 27 (restraint of trade)
+
+### Dispute Resolution
+- Grievance redressal mechanism
+- Arbitration/mediation clause
+- Jurisdiction (courts of specific city)
+
+### Statutory Compliance
+- Statement of compliance with:
+  - Industrial Disputes Act, 1947
+  - Payment of Wages Act, 1936
+  - Minimum Wages Act, 1948
+  - Payment of Bonus Act, 1965
+  - Employees' Provident Funds Act, 1952
+  - Other applicable labour laws
+
+### Modern Workplace Provisions
+- Work from home policy
+- Equipment/technology stipend
+- Professional development/training budget
+- Performance review process
+
+## Red Flags to Watch For
+
+- Probation period > 6 months
+- Notice period disparity (employer gets shorter notice than employee)
+- No mention of statutory benefits (PF/ESI/Gratuity)
+- Overly broad non-compete (entire industry, nationwide, > 2 years)
+- IP assignment of personal projects/pre-existing work
+- Unlimited confidentiality scope
+- No grievance redressal mechanism
+- Missing leave policy details
+- Salary below minimum wage for the state/industry

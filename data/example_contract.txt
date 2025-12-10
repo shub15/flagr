@@ -1,0 +1,59 @@
+# Example Contract for Testing
+# This is a sample employment contract with intentional issues for testing the Legal Advisor system
+
+EMPLOYMENT AGREEMENT
+
+This Agreement is entered into on January 1, 2024 between:
+
+EMPLOYER: TechCorp India Pvt Ltd
+EMPLOYEE: John Doe
+
+1. POSITION AND DUTIES
+The Employee is hired as Software Engineer and will report to the Engineering Manager.
+
+2. COMPENSATION
+Monthly salary: ₹60,000 (Sixty Thousand Rupees)
+
+3. WORKING HOURS
+The Employee agrees to work as per company requirements, including weekends when necessary.
+
+4. PROBATION
+The probation period is 12 months. During this time, employment can be terminated immediately without notice.
+
+5. TERMINATION
+Either party may terminate this agreement with 15 days notice. The company reserves the right to terminate immediately for any reason.
+
+6. INTELLECTUAL PROPERTY
+All work, ideas, inventions, and creations by the Employee, whether during work hours or personal time, shall belong to the Company.
+
+7. NON-COMPETE
+The Employee agrees not to work in the software industry in India for 3 years after leaving the company.
+
+8. CONFIDENTIALITY
+The Employee shall not disclose any information about the company, its clients, or business operations, forever.
+
+9. LIABILITIES
+The Employee accepts full liability for any losses incurred by the company during their employment.
+
+10. GOVERNING LAW
+This agreement shall be governed by the laws of India.
+
+___________________                    ___________________
+Employer Signature                      Employee Signature
+
+
+ISSUES IN THIS CONTRACT (for testing):
+- Probation period too long (12 months vs 3-6 months standard)
+- No mention of PF/ESI/statutory benefits
+- Immediate termination during probation (should have notice)
+- Weak notice period (15 days vs 30-90 days)
+- Overly broad IP assignment (includes personal time)
+- Unreasonable non-compete (3 years, entire industry, nationwide)
+- Unlimited confidentiality (should have reasonable scope)
+- Employee liability for company losses (illegal)
+- No mention of leave policy
+- No overtime compensation
+- Working hours not defined (mentions weekends)
+- Missing: health insurance, gratuity details
+- Missing: dispute resolution mechanism
+- Missing: equipment/WFH policy

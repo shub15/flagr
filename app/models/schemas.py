@@ -1,0 +1,111 @@
+"""
+Pydantic schemas for Legal Advisor API.
+Defines strict data contracts between agents and the API.
+"""
+
+from pydantic import BaseModel, Field
+from typing import List, Optional
+from enum import Enum
+from datetime import datetime
+
+
+class ReviewCategory(str, Enum):
+    """Categories for contract review findings."""
+    CRITICAL = "CRITICAL"
+    GOOD = "GOOD"
+    NEGOTIABLE = "NEGOTIABLE"
+    MISSING = "MISSING"
+
+
+class ReviewPoint(BaseModel):
+    """Atomic unit of a contract review finding."""
+    category: ReviewCategory
+    quote: Optional[str] = Field(
+        None,
+        description="Evidence from contract (required except for MISSING)"
+    )
+    advice: str = Field(..., description="Actionable recommendation")
+    agent_source: str = Field(..., description="Which agent found this (skeptic/strategist/auditor)")
+    confidence: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Confidence score from council consensus"
+    )
+    legal_reference: Optional[str] = Field(
+        None,
+        description="Relevant Indian Labour Law reference from RAG"
+    )
+
+
+class ContractReviewRequest(BaseModel):
+    """Request schema for contract review."""
+    contract_text: str = Field(..., min_length=100, description="Full contract text")
+    contract_type: str = Field(
+        default="employment",
+        description="Type of contract (employment, freelance, etc.)"
+    )
+
+
+class ContractReviewResult(BaseModel):
+    """Final aggregated review result."""
+    review_id: str
+    safety_score: int = Field(..., ge=0, le=100, description="Overall safety score (0-100)")
+    critical_points: List[ReviewPoint] = Field(default_factory=list)
+    good_points: List[ReviewPoint] = Field(default_factory=list)
+    negotiable_points: List[ReviewPoint] = Field(default_factory=list)
+    missing_points: List[ReviewPoint] = Field(default_factory=list)
+    total_findings: int
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "review_id": "rev_123456",
+                "safety_score": 65,
+                "critical_points": [
+                    {
+                        "category": "CRITICAL",
+                        "quote": "Employer may terminate without notice",
+                        "advice": "Request minimum 30-day notice period",
+                        "agent_source": "skeptic",
+                        "confidence": 0.95
+                    }
+                ],
+                "good_points": [],
+                "negotiable_points": [],
+                "missing_points": [],
+                "total_findings": 1
+            }
+        }
+
+
+class FeedbackRequest(BaseModel):
+    """User feedback for learning loop (RLHF-lite)."""
+    review_id: str
+    point_index: int = Field(..., description="Index of the review point")
+    point_category: ReviewCategory
+    action: str = Field(..., description="accepted, dismissed, or modified")
+    user_comment: Optional[str] = None
+
+
+class FeedbackResponse(BaseModel):
+    """Response for feedback submission."""
+    success: bool
+    message: str
+
+
+class HealthResponse(BaseModel):
+    """Health check response."""
+    status: str
+    version: str
+    services: dict
+
+
+class VectorDBStatus(BaseModel):
+    """Vector database status."""
+    index_name: str
+    total_documents: int
+    total_chunks: int
+    embedding_dimension: int
+    available: bool
