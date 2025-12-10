@@ -45,6 +45,10 @@ class ContractReviewRequest(BaseModel):
         default="employment",
         description="Type of contract (employment, freelance, etc.)"
     )
+    context: Optional[str] = Field(
+        None,
+        description="Additional context (e.g., 'Senior SDE at startup', 'Intern role')"
+    )
 
 
 class ContractReviewResult(BaseModel):

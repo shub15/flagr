@@ -4,7 +4,7 @@ Psychology: Compliance officer, identifies strengths and legal compliance.
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 from app.agents.base import BaseAgent
 from app.models.schemas import ReviewPoint
 from app.services.llm_service import llm_service
@@ -29,31 +29,45 @@ Your mission: Recognize employee-friendly clauses and confirm legal compliance.
 Psychology: You focus on what's working well. You validate that the contract follows Indian Labour Law.
 
 Focus areas:
-- Employee-friendly clauses (good notice period, fair compensation, benefits)
-- Compliance with statutory requirements (PF, ESI, gratuity, minimum wage)
-- Clear and fair terms
-- Proper leave policies
+- Employee-friendly clauses (generous leave, benefits, flexibility)
+- Fair compensation and payment terms
 - Reasonable working hours
-- Good intellectual property terms
-- Fair confidentiality scope
-- Proper dispute resolution
+- Good termination/notice provisions
+- Strong confidentiality protections for employee
+- Fair IP ownership terms
+- Proper compliance with labour laws
+- Dispute resolution mechanisms
+- Safety and working condition protections
 
-Output in JSON format:
+Output ONLY in JSON format:
 [
     {
         "category": "GOOD",
-        "quote": "exact quote from contract showing good practice",
-        "advice": "why this is good / what it protects"
+        "quote": "exact quote from contract",
+        "advice": "why this is beneficial for the employee"
     }
 ]
 
-If you find no good points (rare), return empty array: []
+If you find no good points, return empty array: []
 
-Be balanced. Only include genuinely good clauses. Don't force positives."""
+Be specific. Quote exact beneficial text. Explain the positive impact."""
     
-    def get_analysis_prompt(self, contract_text: str, legal_context: str = "") -> str:
-        """Build analysis prompt with RAG context."""
+    def get_analysis_prompt(
+        self, 
+        contract_text: str, 
+        legal_context: str = "",
+        user_context: Optional[str] = None
+    ) -> str:
+        """Build analysis prompt with RAG context and user context."""
         prompt = f"{legal_context}\n\n" if legal_context else ""
+        
+        if user_context:
+            prompt += f"""ROLE CONTEXT: {user_context}
+
+Evaluate good points in relation to this specific role and industry standards.
+
+"""
+        
         prompt += f"""Analyze this contract for GOOD points and compliance validations:
 
 CONTRACT:
@@ -63,16 +77,24 @@ Identify employee-friendly clauses and legal compliance.
 Output ONLY the JSON array. No other text."""
         return prompt
     
-    async def analyze(self, contract_text: str, contract_type: str = "employment") -> List[ReviewPoint]:
+    async def analyze(
+        self, 
+        contract_text: str, 
+        contract_type: str = "employment",
+        context: Optional[str] = None
+    ) -> List[ReviewPoint]:
         """Analyze contract using council of LLMs."""
-        logger.info(f"Auditor analyzing {contract_type} contract")
+        logger.info(
+            f"Auditor analyzing {contract_type} contract "
+            f"(context: {'provided' if context else 'none'})"
+        )
         
         # Retrieve relevant legal context
         legal_context = rag_service.retrieve_for_clause(contract_text[:2000])
         
         # Get prompts
         system_prompt = self.get_system_prompt()
-        analysis_prompt = self.get_analysis_prompt(contract_text, legal_context)
+        analysis_prompt = self.get_analysis_prompt(contract_text, legal_context, context)
         
         # Query council
         llm_responses = await llm_service.generate_parallel(

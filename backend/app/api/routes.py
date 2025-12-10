@@ -6,7 +6,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 import tempfile
 
@@ -39,6 +39,7 @@ router = APIRouter(prefix="/api", tags=["legal-advisor"])
 async def review_contract(
     file: UploadFile = File(...),
     contract_type: str = "employment",
+    context: Optional[str] = None,
     current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> ContractReviewResult:
@@ -124,7 +125,8 @@ async def review_contract(
         # Execute orchestrator
         result = await orchestrator.review_contract(
             contract_text=contract_text,
-            contract_type=contract_type
+            contract_type=contract_type,
+            context=context
         )
         
         # Generate annotated PDF if input was PDF

@@ -4,7 +4,7 @@ Psychology: Negotiator, compares against best practices and legal requirements.
 """
 
 import logging
-from typing import List
+from typing import List, Optional
 from pathlib import Path
 from app.agents.base import BaseAgent
 from app.models.schemas import ReviewPoint
@@ -81,9 +81,22 @@ Compare the contract against BOTH:
 
 Be practical. Focus on impactful missing items and truly negotiable points."""
     
-    def get_analysis_prompt(self, contract_text: str, legal_context: str = "") -> str:
-        """Build analysis prompt with RAG context."""
+    def get_analysis_prompt(
+        self, 
+        contract_text: str, 
+        legal_context: str = "",
+        user_context: Optional[str] = None
+    ) -> str:
+        """Build analysis prompt with RAG context and user context."""
         prompt = f"{legal_context}\n\n" if legal_context else ""
+        
+        if user_context:
+            prompt += f"""ROLE CONTEXT: {user_context}
+
+Tailor missing clauses and negotiable points to this specific role and seniority level.
+
+"""
+        
         prompt += f"""Analyze this contract for MISSING clauses and NEGOTIABLE terms:
 
 CONTRACT:
@@ -93,16 +106,24 @@ Compare against the reference checklist and Indian Labour Law.
 Output ONLY the JSON array. No other text."""
         return prompt
     
-    async def analyze(self, contract_text: str, contract_type: str = "employment") -> List[ReviewPoint]:
+    async def analyze(
+        self, 
+        contract_text: str, 
+        contract_type: str = "employment",
+        context: Optional[str] = None
+    ) -> List[ReviewPoint]:
         """Analyze contract using council of LLMs."""
-        logger.info(f"Strategist analyzing {contract_type} contract")
+        logger.info(
+            f"Strategist analyzing {contract_type} contract "
+            f"(context: {'provided' if context else 'none'})"
+        )
         
         # Retrieve relevant legal context
         legal_context = rag_service.retrieve_for_clause(contract_text[:2000])
         
         # Get prompts
         system_prompt = self.get_system_prompt()
-        analysis_prompt = self.get_analysis_prompt(contract_text, legal_context)
+        analysis_prompt = self.get_analysis_prompt(contract_text, legal_context, context)
         
         # Query council
         llm_responses = await llm_service.generate_parallel(

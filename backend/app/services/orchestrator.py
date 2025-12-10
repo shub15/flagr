@@ -5,7 +5,7 @@ Coordinates all agents to review contracts.
 
 import logging
 import asyncio
-from typing import List
+from typing import List, Optional
 from app.models.schemas import ContractReviewResult
 from app.agents import skeptic_agent, strategist_agent, auditor_agent
 from app.agents.referee import RefereeAgent
@@ -33,29 +33,36 @@ class ContractOrchestrator:
         # Instantiate Referee with LLM service for contextual summary generation
         self.referee = RefereeAgent(llm_service=llm_service)
     
-    async def review_contract(self, contract_text: str, contract_type: str = "employment") -> ContractReviewResult:
+    async def review_contract(
+        self, 
+        contract_text: str, 
+        contract_type: str = "employment",
+        context: Optional[str] = None
+    ) -> ContractReviewResult:
         """
         Execute full contract review with parallel multi-agent processing.
         
         Args:
             contract_text: Full contract text
             contract_type: Type of contract
+            context: Optional additional context about the contract
         
         Returns:
             ContractReviewResult with aggregated findings and safety score
         """
         logger.info(
             f"Starting contract review orchestration "
-            f"(type: {contract_type}, length: {len(contract_text)} chars)"
+            f"(type: {contract_type}, length: {len(contract_text)} chars, "
+            f"context: {'provided' if context else 'none'})"
         )
         
         # Level 1: Fan-Out - Run all agents in parallel
         logger.info("Fan-Out: Launching all agents in parallel...")
         
         agent_tasks = [
-            self.skeptic.analyze(contract_text, contract_type),
-            self.strategist.analyze(contract_text, contract_type),
-            self.auditor.analyze(contract_text, contract_type)
+            self.skeptic.analyze(contract_text, contract_type, context),
+            self.strategist.analyze(contract_text, contract_type, context),
+            self.auditor.analyze(contract_text, contract_type, context)
         ]
         
         try:
