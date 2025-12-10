@@ -695,10 +695,18 @@ async def export_review_pdf(
         
         logger.info(f"Generated refined contract PDF for review {review_id}")
         
-        return FileResponse(
-            path=str(output_path),
-            filename=f"{review_id}_refined.pdf",
-            media_type="application/pdf"
+        # Return PDF with inline disposition to open in browser
+        from fastapi.responses import Response
+        
+        with open(output_path, 'rb') as f:
+            pdf_content = f.read()
+        
+        return Response(
+            content=pdf_content,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'inline; filename="{review_id}_refined.pdf"'
+            }
         )
         
     except HTTPException:
