@@ -5,7 +5,8 @@ import {
     ShieldAlert,
     Coins,
     Wand2,
-    Plus
+    Plus,
+    Info
 } from 'lucide-react';
 import api from '../services/api';
 import { config } from '../config';
@@ -39,6 +40,40 @@ function Split() {
     // Review data from API
     const [reviewData, setReviewData] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<'critical' | 'good' | 'missing' | 'negotiable'>('critical');
+    const [showCorrectionInput, setShowCorrectionInput] = useState(false);
+    const [correctionText, setCorrectionText] = useState('');
+    const [showQueuePopup, setShowQueuePopup] = useState(false);
+    const [showRefineInput, setShowRefineInput] = useState(false);
+    const [refineChoice, setRefineChoice] = useState<'Balanced' | 'Unilateral' | ''>('');
+    const [refineText, setRefineText] = useState('');
+    // Helper to derive current review id
+    const currentReviewId = reviewId || reviewData?.review_id;
+
+    const downloadRefinedPdf = async () => {
+        if (!currentReviewId) {
+            setApiError('No review id available for export');
+            return;
+        }
+        try {
+            const response = await api.get(`/api/reviews/${currentReviewId}/export/pdf`, {
+                responseType: 'blob'
+            });
+            const blob = new Blob([response.data], { type: 'application/pdf' });
+            const url = window.URL.createObjectURL(blob);
+            const disposition = response.headers['content-disposition'] || '';
+            const match = disposition.match(/filename="?([^"]+)"?/i);
+            const filename = match?.[1] || `review_${currentReviewId}_refined.pdf`;
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err: any) {
+            setApiError(err.response?.data?.detail || 'Failed to export refined PDF');
+        }
+    };
 
     // Make API call on component mount
     useEffect(() => {
@@ -370,16 +405,104 @@ function Split() {
 
                                     {/* Action Buttons */}
                                     <div className="flex items-center gap-3">
-                                        <button 
-                                            onClick={() => alert('Coming soon')}
+                                        <button
+                                            onClick={() => {
+                                                setShowCorrectionInput(true);
+                                                setShowRefineInput(false);
+                                                setRefineChoice('');
+                                                setRefineText('');
+                                            }}
                                             className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all"
                                         >
                                             Correct agent
                                         </button>
-                                        <button className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all flex items-center justify-center gap-2">
+                                        <button
+                                            onClick={() => {
+                                                if (currentReviewId) {
+                                                    window.open(`http://localhost:8000/api/reviews/${currentReviewId}/export/pdf`, '_blank');
+                                                }
+                                            }}
+                                            className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all flex items-center justify-center gap-2"
+                                        >
                                             Refine contract
                                         </button>
                                     </div>
+                                    {showCorrectionInput && (
+                                        <div className="mt-4 space-y-3">
+                                            <textarea
+                                                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-black focus:outline-none"
+                                                rows={3}
+                                                placeholder="Type your correction..."
+                                                value={correctionText}
+                                                onChange={(e) => setCorrectionText(e.target.value)}
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    console.log('Send correction:', correctionText);
+                                                    setCorrectionText('');
+                                                    setShowCorrectionInput(false);
+                                                }}
+                                                className="bg-[#166534] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#14532d] transition-all"
+                                            >
+                                                Send
+                                            </button>
+                                        </div>
+                                    )}
+                                    {showRefineInput && (
+                                        <div className="mt-4 space-y-3">
+                                            <div className="flex items-center gap-2 text-sm text-gray-700">
+                                                <span>How you wanna refine it?</span>
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => setRefineChoice('Balanced')}
+                                                        className={`px-4 py-2 rounded-lg border text-sm font-semibold flex items-center gap-1 ${refineChoice === 'Balanced' ? 'bg-[#166534] text-white border-[#166534]' : 'border-gray-200 text-gray-700'}`}
+                                                    >
+                                                        A. Balanced
+                                                        <span className="relative group/info flex items-center">
+                                                            <Info className="w-3.5 h-3.5" />
+                                                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-lg py-1.5 px-3 whitespace-nowrap opacity-0 pointer-events-none group-hover/info:opacity-100 transition-opacity z-50">
+                                                                Balanced: aims for mutual fairness in obligations and benefits.
+                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                                            </div>
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => setRefineChoice('Unilateral')}
+                                                        className={`px-4 py-2 rounded-lg border text-sm font-semibold flex items-center gap-1 ${refineChoice === 'Unilateral' ? 'bg-[#166534] text-white border-[#166534]' : 'border-gray-200 text-gray-700'}`}
+                                                    >
+                                                        B. Unilateral
+                                                        <span className="relative group/info flex items-center">
+                                                            <Info className="w-3.5 h-3.5" />
+                                                            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-lg py-1.5 px-3 whitespace-nowrap opacity-0 pointer-events-none group-hover/info:opacity-100 transition-opacity z-50">
+                                                                Unilateral: favors one party's position more heavily.
+                                                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                                                            </div>
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <textarea
+                                                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-black focus:outline-none"
+                                                rows={3}
+                                                placeholder="Anything other than missing, critical & negotiable?"
+                                                value={refineText}
+                                                onChange={(e) => setRefineText(e.target.value)}
+                                            />
+                                            <button
+                                                onClick={async () => {
+                                                    await downloadRefinedPdf();
+                                                    setRefineChoice('');
+                                                    setRefineText('');
+                                                    setShowRefineInput(false);
+                                                }}
+                                                className="bg-[#166534] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#14532d] transition-all"
+                                            >
+                                                Send
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

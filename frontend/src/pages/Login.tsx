@@ -46,7 +46,7 @@ function Login() {
             {/* Navigation (Minimal Logo) */}
             <nav className="absolute top-8 z-20">
                 <a href="/" className="text-black font-serif-italic text-2xl tracking-wide flex items-center gap-2">
-                    Overrule
+                    Overide
                 </a>
             </nav>
 

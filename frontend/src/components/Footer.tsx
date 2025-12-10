@@ -19,7 +19,7 @@ const Footer: React.FC = () => {
     return (
         <footer className="w-full border-t border-gray-200/50 py-8 mt-auto animate-fade-up delay-500">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-                <span className="font-serif-italic text-lg text-gray-400">Overrule</span>
+                <span className="font-serif-italic text-lg text-gray-400">Overide</span>
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 px-3 py-2 rounded-full backdrop-blur-md bg-white/40 border border-white/50 shadow-sm">
                         <span
