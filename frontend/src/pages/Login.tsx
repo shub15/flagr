@@ -1,19 +1,37 @@
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 function Login() {
     const navigate = useNavigate();
+    const { login } = useAuth();
     const [searchParams] = useSearchParams();
     const [name, setName] = useState('');
     const [email, setEmail] = useState(searchParams.get('email') || '');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('Login submitted:', { name, email, password });
-        navigate('/dashboard');
+        setError('');
+        setLoading(true);
+
+        try {
+            await login(name, email, password);
+            navigate('/dashboard');
+        } catch (err: any) {
+            console.error('Authentication error:', err);
+
+            // Extract error message from response
+            const errorMessage = err.response?.data?.detail ||
+                'Authentication failed. Please try again.';
+            setError(errorMessage);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -48,14 +66,13 @@ function Login() {
                         {/* Name */}
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider ml-1">
-                                What should we call you?
+                                What should we call you? <span className="text-gray-300">(optional)</span>
                             </label>
                             <div className="relative group">
                                 <input
                                     type="text"
                                     placeholder="Jane Doe"
                                     className="premium-input w-full rounded-xl py-3 pl-4 pr-4 text-sm text-black placeholder-gray-400"
-                                    required
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                 />
@@ -110,12 +127,20 @@ function Login() {
                             </div>
                         </div>
 
+                        {/* Error Message */}
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                                {error}
+                            </div>
+                        )}
+
                         {/* Sign In Button */}
                         <button
                             type="submit"
-                            className="w-full bg-black text-white py-3.5 rounded-xl font-medium text-sm mt-2 hover:bg-gray-800 hover:scale-[1.02] transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.2)] flex items-center justify-center gap-2"
+                            disabled={loading}
+                            className="w-full bg-black text-white py-3.5 rounded-xl font-medium text-sm mt-2 hover:bg-gray-800 hover:scale-[1.02] transition-all duration-300 shadow-[0_10px_20px_-10px_rgba(0,0,0,0.2)] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                         >
-                            Sign In
+                            {loading ? 'Authenticating...' : 'Sign In'}
                         </button>
                     </form>
 

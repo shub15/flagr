@@ -72,10 +72,10 @@ def verify_config():
             else:
                 print(f"  ⚠️  {name} API key missing")
         
-        if settings.grok_api_key and not settings.grok_api_key.startswith("your_"):
-            print(f"  ✅ Grok API key configured")
-        else:
-            print(f"  ℹ️  Grok API key not set (optional)")
+        # if settings.grok_api_key and not settings.grok_api_key.startswith("your_"):
+        #     print(f"  ✅ Grok API key configured")
+        # else:
+        #     print(f"  ℹ️  Grok API key not set (optional)")
         
         print(f"\n  Database: {settings.database_url.split('://')[0]}")
         print(f"  Pinecone Index: {settings.pinecone_index_name}")
