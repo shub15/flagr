@@ -89,7 +89,7 @@ function Upload() {
             {/* Navigation (Minimal) */}
             <nav className="absolute top-8 z-20 animate-slide-in">
                 <a href="/" className="text-gray-900 font-serif-italic text-xl tracking-wide">
-                    Overrule
+                    Overide
                 </a>
             </nav>
 

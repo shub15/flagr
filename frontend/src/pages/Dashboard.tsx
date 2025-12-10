@@ -103,7 +103,7 @@ const Dashboard = () => {
                 {/* Brand */}
                 <div className="flex items-center gap-2">
 
-                    <span className="font-serif-italic text-xl tracking-wide">Overrule</span>
+                    <span className="font-serif-italic text-xl tracking-wide">Overide</span>
                 </div>
 
                 {/* Center Tabs */}
