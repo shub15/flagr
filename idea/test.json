@@ -1,0 +1,274 @@
+{
+  "review_id": "rev_0ab09a557046",
+  "safety_score": 0,
+  "critical_points": [
+    {
+      "category": "CRITICAL",
+      "quote": "This Agreement remains in effect for the duration of the Receiving Party’s engagement and for a period of 2 years thereafter.",
+      "advice": "The 2-year post-engagement confidentiality period is excessive and may unlawfully restrict future employment opportunities. Negotiate to reduce this to 1 year or align with the specific duration required for the sensitivity of the information (e.g., 6 months for non-critical data). Ensure the clause complies with Section 27 of the Indian Contract Act, 1872, which voids agreements in restraint of trade.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "CRITICAL",
+      "quote": "The Receiving Party agrees not to disclose, copy, share, or use any confidential information, including but not limited to: [...] Any internal discussions or strategies related to BugOwl AI",
+      "advice": "The definition of 'Confidential Information' is overly broad and vague, potentially encompassing general industry knowledge or skills. Demand specificity by excluding: (1) information already in the public domain, (2) information lawfully obtained from third parties, and (3) knowledge/skills acquired during employment that are not proprietary. Add a carve-out for whistleblowing under the Whistle Blowers Protection Act, 2014.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "CRITICAL",
+      "quote": "All materials, notes, and copies remain the property of BugOwl AI and shall be returned or destroyed upon request.",
+      "advice": "This clause risks unlawful seizure of personal or non-proprietary work. Clarify that 'materials' exclude: (1) personal notes unrelated to BugOwl AI's business, (2) tools/software owned by the employee, and (3) general knowledge/skills. Require written justification for any destruction/return request and a 30-day notice period to contest claims.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "CRITICAL",
+      "quote": "The Receiving Party shall use confidential information solely for work related to BugOwl AI.",
+      "advice": "This restricts the employee from using general industry knowledge or skills in future roles. Narrow the scope to explicitly exclude: (1) skills/knowledge acquired independently, (2) non-proprietary best practices, and (3) information not marked as confidential. Add a provision allowing use of non-proprietary knowledge unless explicitly prohibited in writing.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "CRITICAL",
+      "quote": "This Agreement is entered into as of 11-Aug-2025, by and between BugOwl AI, a proprietary project founded by Kuldip Patel (\"Disclosing Party\"), and Shubham Maity (\"Receiving Party\").",
+      "advice": "The contract lacks clarity on the employment relationship (e.g., intern vs. employee), which may deny statutory protections. Demand a separate employment agreement specifying: (1) job title, (2) compensation, (3) benefits, (4) working hours, and (5) termination terms. Ensure compliance with the Payment of Wages Act, 1936, and Minimum Wages Act, 1948, if applicable.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "CRITICAL",
+      "quote": "No License. Nothing in this Agreement grants any rights, title, or license to any intellectual property belonging to BugOwl AI.",
+      "advice": "This clause is one-sided and fails to address employee-created IP. Add provisions: (1) clarifying ownership of pre-existing IP brought by the employee, (2) defining 'work product' to exclude independent creations, and (3) requiring written assignment for any IP claims. Ensure compliance with the Indian Copyright Act, 1957, for employee-created works.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    }
+  ],
+  "good_points": [
+    {
+      "category": "GOOD",
+      "quote": "Nothing in this Agreement grants any rights, title, or license to any intellectual property belonging to BugOwl AI.",
+      "advice": "This clause clearly states that no IP rights are transferred to the employee, protecting the company's intellectual property and preventing potential disputes over ownership.",
+      "agent_source": "auditor",
+      "confidence": 1,
+      "legal_reference": null
+    }
+  ],
+  "negotiable_points": [
+    {
+      "category": "NEGOTIABLE",
+      "quote": "This Agreement shall be governed in accordance with the laws of India.",
+      "advice": "Specify jurisdiction (e.g., courts of Mumbai) to avoid ambiguity in dispute resolution.",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    }
+  ],
+  "missing_points": [
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Formal employment contract with job title, role description, and reporting structure. This NDA alone does not constitute a valid employment agreement under Indian law.",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Probation period clause (typically 3-6 months as per Indian employment norms).",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Compensation details including base salary, payment schedule (must be monthly per Payment of Wages Act), and statutory benefits (PF/ESI/Gratuity).",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Working hours and leave policy (including CL/SL/EL, maternity leave, and public holidays as mandated by Indian labor laws).",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Termination clause with notice period (typically 30-90 days) and grounds for termination.",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Intellectual Property (IP) assignment clause limited to work-related creations (this NDA's IP clause is one-sided; ensure personal/pre-existing work is excluded).",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Non-compete and non-solicitation clause with reasonable scope (geographic/duration limits) to comply with Section 27 of the Indian Contract Act.",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Dispute resolution mechanism (grievance redressal, arbitration, or jurisdiction clause).",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Statement of compliance with Indian labor laws (Industrial Disputes Act, Minimum Wages Act, etc.).",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    {
+      "category": "MISSING",
+      "quote": null,
+      "advice": "Work-from-home policy, equipment stipend, or professional development provisions (modern workplace best practices).",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    }
+  ],
+  "total_findings": 18,
+  "created_at": "2025-12-10T16:50:51.293851",
+  "annotated_pdf_url": "/api/reviews/rev_0ab09a557046/annotated-pdf",
+  "annotation_map": {
+    "CRITICAL_0": {
+      "category": "CRITICAL",
+      "quote": "This Agreement remains in effect for the duration of the Receiving Party’s engagement and for a period of 2 years thereafter.",
+      "advice": "The 2-year post-engagement confidentiality period is excessive and may unlawfully restrict future employment opportunities. Negotiate to reduce this to 1 year or align with the specific duration required for the sensitivity of the information (e.g., 6 months for non-critical data). Ensure the clause complies with Section 27 of the Indian Contract Act, 1872, which voids agreements in restraint of trade.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    "CRITICAL_1": {
+      "category": "CRITICAL",
+      "quote": "The Receiving Party agrees not to disclose, copy, share, or use any confidential information, including but not limited to: [...] Any internal discussions or strategies related to BugOwl AI",
+      "advice": "The definition of 'Confidential Information' is overly broad and vague, potentially encompassing general industry knowledge or skills. Demand specificity by excluding: (1) information already in the public domain, (2) information lawfully obtained from third parties, and (3) knowledge/skills acquired during employment that are not proprietary. Add a carve-out for whistleblowing under the Whistle Blowers Protection Act, 2014.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    "CRITICAL_2": {
+      "category": "CRITICAL",
+      "quote": "All materials, notes, and copies remain the property of BugOwl AI and shall be returned or destroyed upon request.",
+      "advice": "This clause risks unlawful seizure of personal or non-proprietary work. Clarify that 'materials' exclude: (1) personal notes unrelated to BugOwl AI's business, (2) tools/software owned by the employee, and (3) general knowledge/skills. Require written justification for any destruction/return request and a 30-day notice period to contest claims.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    "CRITICAL_3": {
+      "category": "CRITICAL",
+      "quote": "The Receiving Party shall use confidential information solely for work related to BugOwl AI.",
+      "advice": "This restricts the employee from using general industry knowledge or skills in future roles. Narrow the scope to explicitly exclude: (1) skills/knowledge acquired independently, (2) non-proprietary best practices, and (3) information not marked as confidential. Add a provision allowing use of non-proprietary knowledge unless explicitly prohibited in writing.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    "CRITICAL_4": {
+      "category": "CRITICAL",
+      "quote": "This Agreement is entered into as of 11-Aug-2025, by and between BugOwl AI, a proprietary project founded by Kuldip Patel (\"Disclosing Party\"), and Shubham Maity (\"Receiving Party\").",
+      "advice": "The contract lacks clarity on the employment relationship (e.g., intern vs. employee), which may deny statutory protections. Demand a separate employment agreement specifying: (1) job title, (2) compensation, (3) benefits, (4) working hours, and (5) termination terms. Ensure compliance with the Payment of Wages Act, 1936, and Minimum Wages Act, 1948, if applicable.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    "CRITICAL_5": {
+      "category": "CRITICAL",
+      "quote": "No License. Nothing in this Agreement grants any rights, title, or license to any intellectual property belonging to BugOwl AI.",
+      "advice": "This clause is one-sided and fails to address employee-created IP. Add provisions: (1) clarifying ownership of pre-existing IP brought by the employee, (2) defining 'work product' to exclude independent creations, and (3) requiring written assignment for any IP claims. Ensure compliance with the Indian Copyright Act, 1957, for employee-created works.",
+      "agent_source": "skeptic",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    "GOOD_6": {
+      "category": "GOOD",
+      "quote": "Nothing in this Agreement grants any rights, title, or license to any intellectual property belonging to BugOwl AI.",
+      "advice": "This clause clearly states that no IP rights are transferred to the employee, protecting the company's intellectual property and preventing potential disputes over ownership.",
+      "agent_source": "auditor",
+      "confidence": 1,
+      "legal_reference": null
+    },
+    "NEGOTIABLE_7": {
+      "category": "NEGOTIABLE",
+      "quote": "This Agreement shall be governed in accordance with the laws of India.",
+      "advice": "Specify jurisdiction (e.g., courts of Mumbai) to avoid ambiguity in dispute resolution.",
+      "agent_source": "strategist",
+      "confidence": 1,
+      "legal_reference": null
+    }
+  },
+  "annotation_stats": {
+    "highlights_added": 10,
+    "points_highlighted": 6,
+    "points_not_found": 2,
+    "highlight_details": [
+      {
+        "point_id": "CRITICAL_0",
+        "category": "CRITICAL",
+        "instances": 2
+      },
+      {
+        "point_id": "CRITICAL_2",
+        "category": "CRITICAL",
+        "instances": 2
+      },
+      {
+        "point_id": "CRITICAL_3",
+        "category": "CRITICAL",
+        "instances": 1
+      },
+      {
+        "point_id": "CRITICAL_4",
+        "category": "CRITICAL",
+        "instances": 2
+      },
+      {
+        "point_id": "GOOD_6",
+        "category": "GOOD",
+        "instances": 2
+      },
+      {
+        "point_id": "NEGOTIABLE_7",
+        "category": "NEGOTIABLE",
+        "instances": 1
+      }
+    ],
+    "not_found_details": [
+      {
+        "point_id": "CRITICAL_1",
+        "category": "CRITICAL",
+        "quote": "The Receiving Party agrees not to disclose, copy, share, or use any confidential information, includ..."
+      },
+      {
+        "point_id": "CRITICAL_5",
+        "category": "CRITICAL",
+        "quote": "No License. Nothing in this Agreement grants any rights, title, or license to any intellectual prope..."
+      }
+    ]
+  }
+}

@@ -27,8 +27,8 @@ const Hero: React.FC = () => {
 
             {/* Headline */}
             <h1 className="animate-fade-up delay-200 text-5xl md:text-7xl lg:text-[5.5rem] leading-[1.05] text-gray-900 mb-8 tracking-tight">
-                <span className="block font-normal">Contract reviews you</span>
-                <span className="block font-serif-italic font-normal text-gray-800 mt-2">
+                <span className="block font-georgia">Contract reviews you</span>
+                <span className="block font-serif-italic font-normal text-gray-800 mt-[-10px]">
                     can trust instantly
                 </span>
             </h1>
