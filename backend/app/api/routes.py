@@ -391,6 +391,56 @@ async def get_vectordb_status() -> VectorDBStatus:
         )
 
 
+@router.get("/reviews")
+async def get_all_reviews(
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> List[dict]:
+    """
+    Get all contract reviews for the authenticated user.
+    
+    **Authentication required** - Include JWT token in Authorization header.
+    
+    Returns a list of reviews with metadata and finding counts.
+    """
+    try:
+        # Fetch all reviews for the current user, ordered by most recent first
+        reviews = db.query(ContractReview).filter(
+            ContractReview.user_id == current_user.id
+        ).order_by(ContractReview.created_at.desc()).all()
+        
+        # Format response with summary information
+        result = []
+        for review in reviews:
+            # Count findings by category
+            critical_count = sum(1 for p in review.review_points if p.category == ReviewCategoryDB.CRITICAL)
+            good_count = sum(1 for p in review.review_points if p.category == ReviewCategoryDB.GOOD)
+            negotiable_count = sum(1 for p in review.review_points if p.category == ReviewCategoryDB.NEGOTIABLE)
+            missing_count = sum(1 for p in review.review_points if p.category == ReviewCategoryDB.MISSING)
+            
+            result.append({
+                "review_id": review.review_id,
+                "contract_type": review.contract_type,
+                "safety_score": review.safety_score,
+                "total_findings": review.total_findings,
+                "critical_count": critical_count,
+                "good_count": good_count,
+                "negotiable_count": negotiable_count,
+                "missing_count": missing_count,
+                "created_at": review.created_at.isoformat()
+            })
+        
+        logger.info(f"Retrieved {len(result)} reviews for user {current_user.id}")
+        return result
+        
+    except Exception as e:
+        logger.error(f"Failed to fetch reviews: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch reviews: {str(e)}"
+        )
+
+
 @router.get("/reviews/{review_id}", response_model=ContractReviewResult)
 async def get_review(review_id: str, db: Session = Depends(get_db)) -> ContractReviewResult:
     """Retrieve a past contract review."""
