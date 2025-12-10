@@ -19,7 +19,9 @@ from app.models.schemas import (
     VectorDBStatus
 )
 from app.models.database import ContractReview, ReviewPointDB, UserFeedback, ReviewCategoryDB
+from app.models.user import User
 from app.database.session import get_db
+from app.auth.dependencies import get_current_active_user
 from app.services.orchestrator import orchestrator
 from app.services.pdf_processor import pdf_processor
 from app.services.docx_processor import docx_processor
@@ -37,17 +39,20 @@ router = APIRouter(prefix="/api", tags=["legal-advisor"])
 async def review_contract(
     file: UploadFile = File(...),
     contract_type: str = "employment",
+    current_user: User = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ) -> ContractReviewResult:
     """
     Submit a contract document for multi-agent review.
+    
+    **Authentication required** - Include JWT token in Authorization header.
     
     Accepts file uploads (PDF, DOCX, or images) and automatically extracts text.
     Supported formats: .pdf, .docx, .png, .jpg, .jpeg, .tif, .tiff, .bmp, .webp
     
     Triggers the orchestrator which:
     - Runs 3 agents in parallel (Skeptic, Strategist, Auditor)
-    - Each agent queries 3 LLMs (OpenAI, Gemini, Grok)
+    - Each agent queries council of LLMs
     - Retrieves relevant legal context from Pinecone
     - Aggregates findings via Referee
     """
@@ -169,6 +174,7 @@ async def review_contract(
         # Save to database
         db_review = ContractReview(
             review_id=result.review_id,
+            user_id=current_user.id,  # Link review to user
             contract_text=contract_text,
             contract_type=contract_type,
             safety_score=result.safety_score,

@@ -25,6 +25,7 @@ class ContractReview(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     review_id = Column(String(50), unique=True, index=True, nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # Nullable for backward compatibility
     contract_text = Column(Text, nullable=False)
     contract_type = Column(String(50), default="employment")
     safety_score = Column(Integer, nullable=False)
@@ -32,6 +33,7 @@ class ContractReview(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
+    user = relationship("User", back_populates="reviews")
     review_points = relationship("ReviewPointDB", back_populates="review", cascade="all, delete-orphan")
     feedbacks = relationship("UserFeedback", back_populates="review", cascade="all, delete-orphan")
 

@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     retry_delay_seconds: int = 2  # Delay between retries
     exponential_backoff: bool = True  # Use exponential backoff on retries
     
+    # Authentication
+    jwt_secret_key: str = "your-secret-key-change-in-production-use-openssl-rand-hex-32"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days
+    
     # Application
     debug: bool = False
     log_level: str = "INFO"
