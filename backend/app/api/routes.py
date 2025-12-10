@@ -525,7 +525,7 @@ async def get_annotated_pdf(review_id: str) -> FileResponse:
         )
 
 
-@router.post("/reviews/{review_id}/export/docx")
+@router.get("/reviews/{review_id}/export/docx")
 async def export_review_word(
     review_id: str,
     db: Session = Depends(get_db)
@@ -618,7 +618,7 @@ async def export_review_word(
         )
 
 
-@router.post("/reviews/{review_id}/export/pdf")
+@router.get("/reviews/{review_id}/export/pdf")
 async def export_review_pdf(
     review_id: str,
     db: Session = Depends(get_db)
