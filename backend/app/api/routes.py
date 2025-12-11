@@ -174,13 +174,20 @@ async def review_contract(
                     pdf_file_for_annotation.unlink()
         
         # Save to database
+        import json
+        
         db_review = ContractReview(
             review_id=result.review_id,
             user_id=current_user.id,  # Link review to user
             contract_text=contract_text,
             contract_type=contract_type,
             safety_score=result.safety_score,
-            total_findings=result.total_findings
+            total_findings=result.total_findings,
+            summary=result.summary,
+            recommendation=result.recommendation,
+            annotated_pdf_url=result.annotated_pdf_url,
+            annotation_map=json.dumps(result.annotation_map) if result.annotation_map else None,
+            annotation_stats=json.dumps(result.annotation_stats) if result.annotation_stats else None
         )
         db.add(db_review)
         db.flush()
@@ -477,15 +484,25 @@ async def get_review(review_id: str, db: Session = Depends(get_db)) -> ContractR
         )
         points_by_category[db_point.category.name].append(point)
     
+    # Parse JSON fields from database
+    import json
+    annotation_map = json.loads(review.annotation_map) if review.annotation_map else None
+    annotation_stats = json.loads(review.annotation_stats) if review.annotation_stats else None
+    
     return ContractReviewResult(
         review_id=review.review_id,
         safety_score=review.safety_score,
+        summary=review.summary,
+        recommendation=review.recommendation,
         critical_points=points_by_category["CRITICAL"],
         good_points=points_by_category["GOOD"],
         negotiable_points=points_by_category["NEGOTIABLE"],
         missing_points=points_by_category["MISSING"],
         total_findings=review.total_findings,
-        created_at=review.created_at
+        created_at=review.created_at,
+        annotated_pdf_url=review.annotated_pdf_url,
+        annotation_map=annotation_map,
+        annotation_stats=annotation_stats
     )
 
 

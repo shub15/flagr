@@ -30,6 +30,16 @@ class ContractReview(Base):
     contract_type = Column(String(50), default="employment")
     safety_score = Column(Integer, nullable=False)
     total_findings = Column(Integer, default=0)
+    
+    # Executive summary fields
+    summary = Column(Text, nullable=True)
+    recommendation = Column(String(20), nullable=True)  # SIGN, NEGOTIATE, or REJECT
+    
+    # Annotated PDF fields
+    annotated_pdf_url = Column(String(500), nullable=True)
+    annotation_map = Column(Text, nullable=True)  # JSON stored as text
+    annotation_stats = Column(Text, nullable=True)  # JSON stored as text
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationships
