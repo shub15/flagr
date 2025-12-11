@@ -367,7 +367,7 @@ function Split() {
                                                 Final Verdict
                                             </span>
                                             <h2 className="font-serif text-4xl text-black mt-2 leading-tight">
-                                                {reviewData?.summary || 'Analysis Complete'}
+                                                {'Analysis Complete'}
                                             </h2>
                                         </div>
                                         <div className="bg-black text-white text-xs font-medium px-4 py-1.5 rounded-full shadow-lg">
@@ -376,7 +376,10 @@ function Split() {
                                     </div>
 
                                     <p className="text-sm text-gray-600 font-light leading-relaxed mb-6">
-                                        {reviewData?.detailed_summary || `We found ${reviewData?.total_findings || 0} points of interest in your document. Review the details below.`}
+                                        {reviewData?.summary}
+                                    </p>
+                                    <p className="text-sm text-gray-600 font-light leading-relaxed mb-6">
+                                        {`We found ${reviewData?.total_findings || 0} points of interest in your document. Review the details below.`}
                                     </p>
 
                                     {/* Total Findings */}
