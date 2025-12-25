@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     
     # LLM API Keys
     openai_api_key: str
+    gemini_api_key: Optional[str] = None # For translation
     google_api_key: str  # For Gemini (Referee)
     groq_api_key: Optional[str] = None  # Groq (fast inference)
     mistral_api_key: Optional[str] = None  # Mistral AI

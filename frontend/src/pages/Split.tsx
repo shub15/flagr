@@ -9,7 +9,12 @@ import {
     Info,
     Sparkles,
     CornerDownLeft,
-    Copy
+    Copy,
+    Share2,
+    ThumbsUp,
+    ThumbsDown,
+    Globe
+
 } from 'lucide-react';
 import api from '../services/api';
 import { config } from '../config';
@@ -50,6 +55,62 @@ function Split() {
     const [showRefineInput, setShowRefineInput] = useState(false);
     const [refineChoice, setRefineChoice] = useState<'Balanced' | 'Unilateral' | ''>('');
     const [refineText, setRefineText] = useState('');
+
+    // Translation State
+    const [translation, setTranslation] = useState<{ text: string; lang: string } | null>(null);
+    const [translating, setTranslating] = useState(false);
+    const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+
+
+    // Feedback State
+    type FeedbackState = {
+        [key: string]: {
+            type: 'up' | 'down' | null;
+            correction?: string;
+            comment?: string;
+        }
+    };
+    const [feedback, setFeedback] = useState<FeedbackState>({});
+
+    const getCardKey = (tab: string, index: number) => `${tab}-${index}`;
+
+    const handleFeedback = (tab: string, index: number, type: 'up' | 'down') => {
+        const key = getCardKey(tab, index);
+        setFeedback(prev => ({
+            ...prev,
+            [key]: {
+                ...prev[key],
+                type: prev[key]?.type === type ? null : type // Toggle if same clicked
+            }
+        }));
+    };
+
+    const handleCorrectionChange = (tab: string, index: number, text: string) => {
+        const key = getCardKey(tab, index);
+        setFeedback(prev => ({
+            ...prev,
+            [key]: {
+                ...prev[key],
+                correction: text
+            }
+        }));
+    };
+
+    const submitCorrection = (tab: string, index: number) => {
+        const key = getCardKey(tab, index);
+        const currentCorrection = feedback[key]?.correction;
+        if (!currentCorrection?.trim()) return;
+
+        setFeedback(prev => ({
+            ...prev,
+            [key]: {
+                ...prev[key],
+                comment: currentCorrection, // Set the comment
+                correction: '' // Clear the input draft
+            }
+        }));
+    };
+
     // Helper to derive current review id
     const currentReviewId = reviewId || reviewData?.review_id;
 
@@ -78,6 +139,29 @@ function Split() {
             setApiError(err.response?.data?.detail || 'Failed to export refined PDF');
         }
     };
+
+    const handleTranslate = async (lang: string) => {
+        if (!reviewData?.summary) return;
+
+        try {
+            setTranslating(true);
+            setShowLanguageDropdown(false);
+            const response = await api.post('/api/translate', {
+                text: reviewData.summary,
+                target_language: lang
+            });
+            setTranslation({
+                text: response.data.translated_text,
+                lang: lang
+            });
+        } catch (err: any) {
+            console.error('Translation failed:', err);
+            // Optional: Show error toast
+        } finally {
+            setTranslating(false);
+        }
+    };
+
 
     // Make API call on component mount
     useEffect(() => {
@@ -403,14 +487,68 @@ function Split() {
                                                     {'Analysis Complete'}
                                                 </h2>
                                             </div>
-                                            <div className="bg-black text-white text-xs font-medium px-4 py-1.5 rounded-full shadow-lg">
-                                                Score: {reviewData?.safety_score ?? '--'}
+                                            <div className="flex items-center gap-2">
+                                                {/* Language Dropdown */}
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => setShowLanguageDropdown(!showLanguageDropdown)}
+                                                        className="flex items-center gap-2 bg-white border border-gray-200 text-gray-600 text-xs font-medium px-3 py-2 rounded-full hover:bg-gray-50 transition-all"
+                                                    >
+                                                        <Globe className="w-3.5 h-3.5" />
+                                                        {translation ? translation.lang : 'Translate'}
+                                                    </button>
+
+                                                    {showLanguageDropdown && (
+                                                        <div className="absolute top-full right-0 mt-2 w-32 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
+                                                            {['Hindi', 'Marathi', 'Tamil', 'Gujarati'].map((lang) => (
+                                                                <button
+                                                                    key={lang}
+                                                                    onClick={() => handleTranslate(lang)}
+                                                                    className="w-full text-left px-4 py-2 text-xs hover:bg-gray-50 text-gray-700 transition-colors"
+                                                                >
+                                                                    {lang}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="relative group/share">
+                                                    <button
+                                                        onClick={downloadRefinedPdf}
+                                                        className="flex items-center gap-2 bg-[#0C4522] text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg hover:bg-[#09361a] transition-all"
+                                                    >
+                                                        <Share2 className="w-3.5 h-3.5" />
+                                                        Share
+                                                    </button>
+                                                    <div className="absolute bottom-full mb-2 right-0 w-max bg-gray-900 text-white text-[10px] px-2 py-1.5 rounded opacity-0 group-hover/share:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                                                        Redacted PDF will be created
+                                                        <div className="absolute top-full right-4 border-4 border-transparent border-t-gray-900"></div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
 
                                         <p className="text-sm text-gray-600 font-light leading-relaxed mb-6">
                                             {reviewData?.summary}
                                         </p>
+
+                                        {/* Translated Summary */}
+                                        {translating && (
+                                            <div className="text-sm text-gray-400 font-light italic mb-6 animate-pulse">
+                                                Translating...
+                                            </div>
+                                        )}
+                                        {translation && !translating && (
+                                            <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-6">
+                                                <div className="text-[10px] font-bold text-gray-400 uppercase mb-2">
+                                                    Translated to {translation.lang}
+                                                </div>
+                                                <p className="text-sm text-gray-700 font-light leading-relaxed">
+                                                    {translation.text}
+                                                </p>
+                                            </div>
+                                        )}
                                         <p className="text-sm text-gray-600 font-light leading-relaxed mb-6">
                                             {`We found ${reviewData?.total_findings || 0} points of interest in your document. Review the details below.`}
                                         </p>
@@ -605,9 +743,61 @@ function Split() {
                                                                     {activeTab}
                                                                 </span>
                                                             </div>
-                                                            <p className="text-xs text-gray-500 font-light leading-relaxed">
+                                                            <p className="text-xs text-gray-500 font-light leading-relaxed mb-3">
                                                                 {finding.quote ? `"${finding.quote}"` : ''}
                                                             </p>
+
+                                                            {/* Feedback Actions */}
+                                                            <div className="flex flex-col gap-2">
+                                                                <div className="flex items-center gap-3">
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleFeedback(activeTab, index, 'up');
+                                                                        }}
+                                                                        className={`p-1 rounded hover:bg-gray-100 transition-colors ${feedback[getCardKey(activeTab, index)]?.type === 'up' ? 'text-green-600' : 'text-gray-300'}`}
+                                                                    >
+                                                                        <ThumbsUp className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            handleFeedback(activeTab, index, 'down');
+                                                                        }}
+                                                                        className={`p-1 rounded hover:bg-gray-100 transition-colors ${feedback[getCardKey(activeTab, index)]?.type === 'down' ? 'text-red-500' : 'text-gray-300'}`}
+                                                                    >
+                                                                        <ThumbsDown className="w-3.5 h-3.5" />
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* Correction Input or Comment */}
+                                                                {feedback[getCardKey(activeTab, index)]?.comment ? (
+                                                                    <div className="mt-2 text-xs bg-gray-50 border border-gray-100 p-2 rounded text-gray-700 italic">
+                                                                        Correction: "{feedback[getCardKey(activeTab, index)]?.comment}"
+                                                                    </div>
+                                                                ) : feedback[getCardKey(activeTab, index)]?.type === 'down' && (
+                                                                    <div className="flex gap-2 mt-1" onClick={(e) => e.stopPropagation()}>
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder="Correction..."
+                                                                            value={feedback[getCardKey(activeTab, index)]?.correction || ''}
+                                                                            onChange={(e) => handleCorrectionChange(activeTab, index, e.target.value)}
+                                                                            className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-gray-400"
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === 'Enter') {
+                                                                                    submitCorrection(activeTab, index);
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <button
+                                                                            onClick={() => submitCorrection(activeTab, index)}
+                                                                            className="bg-black text-white text-[10px] px-2 py-1 rounded hover:bg-gray-800 transition-colors"
+                                                                        >
+                                                                            Send
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 );

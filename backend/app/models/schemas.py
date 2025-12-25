@@ -165,6 +165,7 @@ class ContractAnswerResponse(BaseModel):
     confidence: float = Field(..., ge=0, le=1, description="Answer confidence")
     answerable: bool = Field(..., description="Whether question can be answered from contract")
     
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -180,4 +181,17 @@ class ContractAnswerResponse(BaseModel):
                 "answerable": True
             }
         }
+
+
+class TranslationRequest(BaseModel):
+    """Request to translate text."""
+    text: str = Field(..., min_length=1, description="Text to translate")
+    target_language: str = Field(..., description="Target language (e.g. Hindi, Marathi)")
+
+
+class TranslationResponse(BaseModel):
+    """Translated text response."""
+    translated_text: str = Field(..., description="Translated text")
+    original_text: str = Field(..., description="Original text")
+    target_language: str = Field(..., description="Target language")
 
