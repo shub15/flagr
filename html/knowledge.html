@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overide - Knowledge Base</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">Overide</div>
+        <div class="nav-links">
+            <a href="#">Dashboard</a>
+            <a href="#" class="active">Library</a>
+            <a href="#">Settings</a>
+        </div>
+        <div class="user-profile">
+            <div class="avatar">R</div>
+        </div>
+    </nav>
+
+    <main class="container">
+        
+        <!-- Header Section -->
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="serif-title">Knowledge Base</h1>
+                <p class="subtitle">Select the documents your AI agent should use for context.</p>
+            </div>
+            <div class="header-actions">
+                <div class="search-bar">
+                    <i class="ph ph-magnifying-glass"></i>
+                    <input type="text" placeholder="Search clauses, policies...">
+                </div>
+            </div>
+        </header>
+
+        <!-- NEW: Full Width Upload Section -->
+        <section class="upload-container">
+            <div class="upload-zone full-width">
+                <div class="upload-content">
+                    <div class="upload-icon-circle">
+                        <i class="ph ph-upload-simple"></i>
+                    </div>
+                    <div class="upload-text">
+                        <h3>Upload New Knowledge</h3>
+                        <p>Drag & drop PDF or DOCX files here, or <span class="link-text">browse files</span></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Two Section Layout -->
+        <div class="kb-grid">
+            
+            <!-- SECTION 1: SYSTEM INTELLIGENCE -->
+            <section class="kb-panel system-panel">
+                <div class="panel-header">
+                    <div class="panel-title-group">
+                        <div class="icon-badge system">
+                            <i class="ph ph-shield-check"></i>
+                        </div>
+                        <div>
+                            <h2>System Standards</h2>
+                            <p>Overide's legal baselines</p>
+                        </div>
+                    </div>
+                    <span class="count-badge">4 Active</span>
+                </div>
+
+                <div class="document-list">
+                    <!-- Doc Item -->
+                    <div class="doc-card">
+                        <div class="doc-icon"><i class="ph ph-file-text"></i></div>
+                        <div class="doc-info">
+                            <h3>California Labor Laws 2024</h3>
+                            <span class="meta">Updated 2 days ago • System</span>
+                        </div>
+                        <!-- Toggle Switch -->
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Doc Item -->
+                    <div class="doc-card">
+                        <div class="doc-icon"><i class="ph ph-file-text"></i></div>
+                        <div class="doc-info">
+                            <h3>Standard NDA Template</h3>
+                            <span class="meta">Updated 1 week ago • System</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- Doc Item -->
+                    <div class="doc-card">
+                        <div class="doc-icon"><i class="ph ph-file-text"></i></div>
+                        <div class="doc-info">
+                            <h3>GDPR Compliance Clause</h3>
+                            <span class="meta">Updated 1 month ago • System</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                     
+                     <div class="doc-card">
+                        <div class="doc-icon"><i class="ph ph-file-text"></i></div>
+                        <div class="doc-info">
+                            <h3>SaaS MSA Framework</h3>
+                            <span class="meta">Updated 3 months ago • System</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: USER UPLOADS -->
+            <section class="kb-panel user-panel">
+                <div class="panel-header">
+                    <div class="panel-title-group">
+                        <div class="icon-badge user">
+                            <i class="ph ph-buildings"></i>
+                        </div>
+                        <div>
+                            <h2>Organization Uploads</h2>
+                            <p>Your internal playbooks</p>
+                        </div>
+                    </div>
+                    <span class="count-badge">2 Active</span>
+                </div>
+
+                <div class="document-list">
+                    <!-- User Doc Item -->
+                    <div class="doc-card">
+                        <div class="doc-icon user-file"><i class="ph ph-file-doc"></i></div>
+                        <div class="doc-info">
+                            <h3>Internal Remote Work Policy</h3>
+                            <span class="meta">Uploaded 5 hours ago</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- User Doc Item -->
+                    <div class="doc-card">
+                        <div class="doc-icon user-file"><i class="ph ph-file-pdf"></i></div>
+                        <div class="doc-info">
+                            <h3>Q3 Sales Agreement_Final</h3>
+                            <span class="meta">Uploaded yesterday</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <!-- User Doc Item -->
+                    <div class="doc-card">
+                        <div class="doc-icon user-file"><i class="ph ph-file-doc"></i></div>
+                        <div class="doc-info">
+                            <h3>Vendor Code of Conduct</h3>
+                            <span class="meta">Uploaded 2 weeks ago</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <!-- User Doc Item -->
+                    <div class="doc-card">
+                        <div class="doc-icon user-file"><i class="ph ph-file-doc"></i></div>
+                        <div class="doc-info">
+                            <h3>Old_Employment_v1.docx</h3>
+                            <span class="meta">Uploaded 1 year ago</span>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+</body>
+</html>
