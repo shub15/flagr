@@ -16,7 +16,9 @@ from app.models.schemas import (
     FeedbackRequest,
     FeedbackResponse,
     HealthResponse,
-    VectorDBStatus
+    VectorDBStatus,
+    ContractQuestionRequest,
+    ContractAnswerResponse
 )
 from app.models.database import ContractReview, ReviewPointDB, UserFeedback, ReviewCategoryDB
 from app.models.user import User
@@ -504,6 +506,68 @@ async def get_review(review_id: str, db: Session = Depends(get_db)) -> ContractR
         annotation_map=annotation_map,
         annotation_stats=annotation_stats
     )
+
+
+@router.post("/reviews/{review_id}/ask", response_model=ContractAnswerResponse)
+async def ask_contract_question(
+    review_id: str,
+    request: ContractQuestionRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+) -> ContractAnswerResponse:
+    """
+    Ask a natural language question about a previously reviewed contract.
+    
+    **Authentication required**
+    
+    Examples:
+    - "What is the notice period?"
+    - "Is the vendor liable for delays?"
+    - "Can I work remotely?"
+    - "What happens if I get terminated?"
+    
+    Returns:
+    - AI-generated answer based on contract text
+    - Supporting quotes from the contract
+    - Confidence score and answerability flag
+    """
+    try:
+        # Get contract from database
+        review = db.query(ContractReview).filter(
+            ContractReview.review_id == review_id,
+            ContractReview.user_id == current_user.id  # Ensure user owns this review
+        ).first()
+        
+        if not review:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Review not found: {review_id}"
+            )
+        
+        # Answer question using QA service
+        from app.services.contract_qa_service import contract_qa_service
+        
+        answer = await contract_qa_service.answer_question(
+            contract_text=review.contract_text,
+            question=request.question,
+            contract_type=review.contract_type
+        )
+        
+        logger.info(
+            f"Answered Q&A for review {review_id}: '{request.question}' "
+            f"(answerable={answer.answerable}, confidence={answer.confidence:.2f})"
+        )
+        
+        return answer
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Q&A failed for review {review_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to answer question: {str(e)}"
+        )
 
 
 @router.get("/reviews/{review_id}/annotated-pdf")
