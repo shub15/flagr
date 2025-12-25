@@ -10,6 +10,7 @@ import Login from './pages/Login';
 import Upload from './pages/Upload';
 import Split from './pages/Split';
 import Dashboard from './pages/Dashboard';
+import Knowledge from './pages/Knowledge';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -52,6 +53,7 @@ function App() {
           <Route path="/split" element={<ProtectedRoute><Split /></ProtectedRoute>} />
           <Route path="/split/:reviewId" element={<ProtectedRoute><Split /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/knowledge" element={<ProtectedRoute><Knowledge /></ProtectedRoute>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

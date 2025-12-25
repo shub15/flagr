@@ -962,6 +962,7 @@ async def export_review_pdf(
         with open(output_path, 'rb') as f:
             pdf_content = f.read()
         
+
         return Response(
             content=pdf_content,
             media_type="application/pdf",
@@ -978,6 +979,26 @@ async def export_review_pdf(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"PDF export failed: {str(e)}"
         )
+
+
+@router.post("/translate", response_model=TranslationResponse)
+async def translate_text_endpoint(
+    request: TranslationRequest,
+    current_user: User = Depends(get_current_active_user)
+) -> TranslationResponse:
+    """
+    Translate text to the target language using Gemini.
+    """
+    from app.services.translation_service import translation_service
+    
+    translated_text = await translation_service.translate_text(request.text, request.target_language)
+    
+    return TranslationResponse(
+        translated_text=translated_text,
+        original_text=request.text,
+        target_language=request.target_language
+    )
+
 
 
 @router.get("/health", response_model=HealthResponse)
