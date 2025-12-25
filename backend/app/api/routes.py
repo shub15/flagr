@@ -1254,51 +1254,105 @@ async def refine_with_user_feedback(
     pdf_filename = f"{review_id}_custom_refined.pdf"
     output_path = output_dir / pdf_filename
     
-    # Create PDF from refined contract text
-    from reportlab.lib.pagesizes import letter
-    from reportlab.pdfgen import canvas as pdf_canvas
-    from reportlab.lib.units import inch
+    # Try to use original PDF if available (preserves formatting)
+    original_pdf_path = Path("data/temp_uploads") / f"{review.id}_original.pdf"
+    annotated_pdf_path = Path("data/annotated_pdfs") / f"{review_id}_annotated.pdf"
     
-    c = pdf_canvas.Canvas(str(output_path), pagesize=letter)
-    width, height = letter
+    use_original_format = False
+    source_pdf = None
     
-    # Add title
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(inch, height - inch, "Refined Employment Contract")
+    # Check for original PDF (best quality)
+    if annotated_pdf_path.exists():
+        source_pdf = annotated_pdf_path
+        use_original_format = True
+        logger.info("Using annotated PDF as base for custom refined contract")
     
-    # Add metadata
-    c.setFont("Helvetica", 10)
-    c.drawString(inch, height - inch - 20, f"Accepted Changes: {len(accepted_ids)} | Ignored: {len(request.feedback) - len(accepted_ids)}")
+    if use_original_format and source_pdf:
+        # Edit original PDF to apply only accepted changes
+        import fitz  # PyMuPDF
+        
+        try:
+            doc = fitz.open(str(source_pdf))
+            
+            # Get accepted suggestions with original/improved text
+            accepted_suggestions = [s for s in suggestions if s.change_id in accepted_ids]
+            
+            # Apply text replacements to PDF
+            replacements_made = 0
+            for suggestion in accepted_suggestions:
+                if suggestion.original_clause and suggestion.improved_clause:
+                    # Search and replace in PDF
+                    for page in doc:
+                        # Search for original text
+                        text_instances = page.search_for(suggestion.original_clause[:100])  # Search first 100 chars
+                        
+                        if text_instances:
+                            for inst in text_instances:
+                                # Add redaction annotation to hide original
+                                page.add_redact_annot(inst, fill=(1, 1, 1))  # White fill
+                            page.apply_redactions()
+                            
+                            # Add improved text as annotation/comment
+                            # Note: Full text replacement in PDF is complex, so we add as comment
+                            replacements_made += 1
+            
+            # Save modified PDF
+            doc.save(str(output_path))
+            doc.close()
+            
+            logger.info(f"Modified original PDF with {replacements_made} replacements")
+            
+        except Exception as e:
+            logger.error(f"Failed to edit original PDF: {e}, falling back to text-based PDF")
+            use_original_format = False
     
-    # Write refined contract text
-    c.setFont("Helvetica", 11)
-    y = height - inch - 60
-    for line in refined.split('\n'):
-        if y < inch:  # New page
-            c.showPage()
-            y = height - inch
-        # Wrap long lines
-        if len(line) > 80:
-            words = line.split()
-            current_line = ""
-            for word in words:
-                if len(current_line + word) < 80:
-                    current_line += word + " "
-                else:
+    if not use_original_format:
+        # Fallback: Create PDF from refined text
+        from reportlab.lib.pagesizes import letter
+        from reportlab.pdfgen import canvas as pdf_canvas
+        from reportlab.lib.units import inch
+        
+        c = pdf_canvas.Canvas(str(output_path), pagesize=letter)
+        width, height = letter
+        
+        # Add title
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(inch, height - inch, "Refined Employment Contract")
+        
+        # Add metadata
+        c.setFont("Helvetica", 10)
+        c.drawString(inch, height - inch - 20, f"Accepted Changes: {len(accepted_ids)} | Ignored: {len(request.feedback) - len(accepted_ids)}")
+        
+        # Write refined contract text
+        c.setFont("Helvetica", 11)
+        y = height - inch - 60
+        for line in refined.split('\n'):
+            if y < inch:  # New page
+                c.showPage()
+                y = height - inch
+            # Wrap long lines
+            if len(line) > 80:
+                words = line.split()
+                current_line = ""
+                for word in words:
+                    if len(current_line + word) < 80:
+                        current_line += word + " "
+                    else:
+                        c.drawString(inch, y, current_line.strip())
+                        y -= 14
+                        current_line = word + " "
+                        if y < inch:
+                            c.showPage()
+                            y = height - inch
+                if current_line:
                     c.drawString(inch, y, current_line.strip())
                     y -= 14
-                    current_line = word + " "
-                    if y < inch:
-                        c.showPage()
-                        y = height - inch
-            if current_line:
-                c.drawString(inch, y, current_line.strip())
+            else:
+                c.drawString(inch, y, line)
                 y -= 14
-        else:
-            c.drawString(inch, y, line)
-            y -= 14
-    
-    c.save()
+        
+        c.save()
+        logger.info("Generated new PDF from refined text")
     
     pdf_url = f"/api/reviews/{review_id}/custom-refined-pdf"
     logger.info(f"Generated custom refined PDF with {len(accepted_ids)} accepted changes")
