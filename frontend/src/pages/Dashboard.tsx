@@ -16,10 +16,11 @@ import {
     Lock,
     Clock,
     Plus,
-    AlertCircle,
-    Check
+    AlertCircle
 } from 'lucide-react';
 import api from '../services/api';
+import CalendarTab from './CalendarTab';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Review {
     review_id: string;
@@ -34,12 +35,13 @@ interface Review {
 }
 
 const Dashboard = () => {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
     const [activeFilter, setActiveFilter] = useState('all');
     const [selectedDocType, setSelectedDocType] = useState('nda');
     const [contextOpen, setContextOpen] = useState(false);
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'settings'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'settings' | 'calendar'>('dashboard');
 
     // Reviews state
     const [reviews, setReviews] = useState<Review[]>([]);
@@ -92,6 +94,15 @@ const Dashboard = () => {
         navigate(`/split/${reviewId}`);
     };
 
+    const handleConnect = () => {
+        // Open Google OAuth screen in new window
+        window.open(
+            'https://accounts.google.com/signin/v2/identifier?flowName=GlifWebSignIn&flowEntry=ServiceLogin',
+            '_blank',
+            'width=500,height=600'
+        );
+    };
+
     return (
         <div className="min-h-screen flex flex-col">
             {/* Background Gradients */}
@@ -115,6 +126,12 @@ const Dashboard = () => {
                         className={`transition-colors pb-5 mt-5 ${activeTab === 'dashboard' ? 'text-black border-b border-black' : 'text-gray-400 hover:text-black'}`}
                     >
                         Dashboard
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('calendar')}
+                        className={`transition-colors pb-5 mt-5 ${activeTab === 'calendar' ? 'text-black border-b border-black' : 'text-gray-400 hover:text-black'}`}
+                    >
+                        Calendar
                     </button>
                     <a href="/knowledge" className="text-gray-400 hover:text-black transition-colors pb-5 mt-5">Library</a>
                     <button
@@ -150,7 +167,7 @@ const Dashboard = () => {
                             {/* Welcome Greeting */}
                             <div className="mb-2">
                                 <h1 className="font-serif text-7xl md:text-8xl text-black tracking-tight">
-                                    Welcome, Riddhesh
+                                    Welcome, {user?.username ? user.username.charAt(0).toUpperCase() + user.username.slice(1) : 'User'}
                                 </h1>
                                 {/* <p className="text-gray-500 mt-2 font-light">
                             You have <span className="text-black font-medium">3 contracts</span> pending review
@@ -412,6 +429,8 @@ const Dashboard = () => {
                             </div>
                         </section>
                     </div>
+                ) : activeTab === 'calendar' ? (
+                    <CalendarTab />
                 ) : (
                     // SETTINGS / INTEGRATIONS VIEW
                     <div className="animate-fade-up w-full">
@@ -432,7 +451,10 @@ const Dashboard = () => {
                                         <p className="text-xs text-gray-500 mt-1">Sync contracts from Drive folders</p>
                                     </div>
                                 </div>
-                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
+                                <button
+                                    onClick={handleConnect}
+                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
+                                >
                                     Connect
                                 </button>
                             </div>
@@ -448,7 +470,10 @@ const Dashboard = () => {
                                         <p className="text-xs text-gray-500 mt-1">Receive risk alerts in channels</p>
                                     </div>
                                 </div>
-                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
+                                <button
+                                    onClick={handleConnect}
+                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
+                                >
                                     Connect
                                 </button>
                             </div>
@@ -457,17 +482,31 @@ const Dashboard = () => {
                             <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between h-[180px]">
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
-                                        <img src="https://images.icon-icons.com/836/PNG/512/Trello_icon-icons.com_66775.png" alt="Trello" className="w-7 h-7" />
+                                        <img
+                                            src="https://images.icon-icons.com/836/PNG/512/Trello_icon-icons.com_66775.png"
+                                            alt="Trello"
+                                            className="w-7 h-7"
+                                        />
                                     </div>
+
                                     <div>
                                         <h3 className="font-serif text-2xl text-black">Trello</h3>
-                                        <p className="text-xs text-gray-500 mt-1">Create cards from action items</p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Create cards from action items
+                                        </p>
                                     </div>
                                 </div>
-                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
-                                    Connect
+
+                                {/* Connected Button */}
+                                <button
+                                    disabled
+                                    className="w-full bg-white border border-green-600 text-green-700 text-2xl font-serif px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 cursor-default"
+                                >
+                                    <span className="text-green-600">✓</span>
+                                    <a href="https://trello.com/b/yjZMyk8g/orchid" target='_blank'>Connected</a>
                                 </button>
                             </div>
+
 
                             {/* Adobe Acrobat */}
                             <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between h-[180px]">
@@ -480,7 +519,10 @@ const Dashboard = () => {
                                         <p className="text-xs text-gray-500 mt-1">Import PDFs directly from cloud</p>
                                     </div>
                                 </div>
-                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
+                                <button
+                                    onClick={handleConnect}
+                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
+                                >
                                     Connect
                                 </button>
                             </div>
@@ -496,7 +538,10 @@ const Dashboard = () => {
                                         <p className="text-xs text-gray-500 mt-1">Sync contracts from folders</p>
                                     </div>
                                 </div>
-                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
+                                <button
+                                    onClick={handleConnect}
+                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
+                                >
                                     Connect
                                 </button>
                             </div>
@@ -512,7 +557,10 @@ const Dashboard = () => {
                                         <p className="text-xs text-gray-500 mt-1">Embed analysis into pages</p>
                                     </div>
                                 </div>
-                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
+                                <button
+                                    onClick={handleConnect}
+                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
+                                >
                                     Connect
                                 </button>
                             </div>

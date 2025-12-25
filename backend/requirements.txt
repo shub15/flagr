@@ -48,3 +48,6 @@ cohere==4.47
 # Testing
 pytest==7.4.4
 pytest-asyncio==0.23.3
+
+# Redaction packages 
+spacy

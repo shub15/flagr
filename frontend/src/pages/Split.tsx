@@ -18,8 +18,10 @@ import {
 
 
 } from 'lucide-react';
+
 import api from '../services/api';
 import { config } from '../config';
+import RefineTab from './RefineTab';
 
 interface Step {
     label: string;
@@ -33,6 +35,28 @@ interface ChatMessage {
     quotes?: Array<{ text: string; confidence: number }>;
     suggestions?: string[];
     searchResults?: Array<{ title: string; link: string; snippet: string; source: string; date?: string }>;
+}
+
+interface LLMResponse {
+    provider: string;
+    model: string;
+    raw_response: string;
+    findings: any[];
+    confidence: number;
+    response_time_ms: number;
+}
+
+interface AgentCouncilResponse {
+    agent_name: string;
+    llm_responses: LLMResponse[];
+    summary: string;
+    total_findings: number;
+    final_findings: number;
+}
+
+interface CouncilTransparencyResponse {
+    review_id: string;
+    agents: AgentCouncilResponse[];
 }
 
 const SUGGESTED_BACKUPS = [
@@ -67,16 +91,20 @@ function Split() {
     // Review data from API
     const [reviewData, setReviewData] = useState<any>(null);
     const [activeTab, setActiveTab] = useState<'critical' | 'good' | 'missing' | 'negotiable'>('critical');
-    const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'chat'>('analysis');
+
+    const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'chat' | 'refine'>('analysis');
     const [showCorrectionInput, setShowCorrectionInput] = useState(false);
+
     const [correctionText, setCorrectionText] = useState('');
     const [showQueuePopup, setShowQueuePopup] = useState(false);
-    const [showRefineInput, setShowRefineInput] = useState(false);
-    const [refineChoice, setRefineChoice] = useState<'Balanced' | 'Unilateral' | ''>('');
-    const [refineText, setRefineText] = useState('');
+
 
     // Translation State
     const [translation, setTranslation] = useState<{ text: string; lang: string } | null>(null);
+
+    // Council Data State
+    const [councilData, setCouncilData] = useState<CouncilTransparencyResponse | null>(null);
+    const [isCouncilLoading, setIsCouncilLoading] = useState(false);
     const [translating, setTranslating] = useState(false);
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
 
@@ -147,30 +175,13 @@ function Split() {
     // Helper to derive current review id
     const currentReviewId = reviewId || reviewData?.review_id;
 
-    const downloadRefinedPdf = async () => {
+    const handleShare = () => {
         if (!currentReviewId) {
-            setApiError('No review id available for export');
+            setApiError('No review id available for share');
             return;
         }
-        try {
-            const response = await api.get(`/api/reviews/${currentReviewId}/export/pdf`, {
-                responseType: 'blob'
-            });
-            const blob = new Blob([response.data], { type: 'application/pdf' });
-            const url = window.URL.createObjectURL(blob);
-            const disposition = response.headers['content-disposition'] || '';
-            const match = disposition.match(/filename="?([^"]+)"?/i);
-            const filename = match?.[1] || `review_${currentReviewId}_refined.pdf`;
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = filename;
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-        } catch (err: any) {
-            setApiError(err.response?.data?.detail || 'Failed to export refined PDF');
-        }
+        const url = `${config.apiBaseUrl}/api/reviews/${currentReviewId}/annotated-pdf/redacted`;
+        window.open(url, '_blank');
     };
 
     const handleTranslate = async (lang: string) => {
@@ -320,6 +331,32 @@ function Split() {
         makeApiCall();
     }, [reviewId, file, purpose, context, steps.length]);
 
+    const fetchCouncilData = async (id: string) => {
+        try {
+            setIsCouncilLoading(true);
+            const response = await api.get(`/api/reviews/${id}/council`);
+            setCouncilData(response.data);
+        } catch (err) {
+            console.error("Failed to fetch council data:", err);
+        } finally {
+            setIsCouncilLoading(false);
+        }
+    };
+
+    // Initial load for existing review
+    useEffect(() => {
+        if (reviewId) {
+            fetchCouncilData(reviewId);
+        }
+    }, [reviewId]);
+
+    // Fetch council data when new review is generated
+    useEffect(() => {
+        if (reviewData?.review_id) {
+            fetchCouncilData(reviewData.review_id);
+        }
+    }, [reviewData?.review_id]);
+
     // Handle step-by-step animation with delays
     useEffect(() => {
         const STEP_DELAY = 2000; // 2 seconds between each step
@@ -406,6 +443,35 @@ function Split() {
             negotiable: { bg: 'bg-[#EFF6FF]', text: 'text-[#1E40AF]', border: 'border-[#DBEAFE]', leftBar: 'bg-[#DBEAFE]' }
         };
         return colors[category as keyof typeof colors] || colors.critical;
+    };
+
+    const getAgentStyle = (agentName: string) => {
+        const name = agentName.toLowerCase();
+        if (name.includes('risk') || name.includes('skeptic')) {
+            return {
+                label: 'Agent Risk',
+                icon: <ShieldAlert className="w-3 h-3 text-[#BE123C]" />,
+                colors: { bg: 'bg-[#FFF1F2]', border: 'border-[#FECDD3]', iconBg: 'bg-white', text: 'text-[#881337]', iconColor: 'text-[#9F1239]' }
+            };
+        } else if (name.includes('finance') || name.includes('auditor') || name.includes('compliance')) {
+            return {
+                label: 'Agent Compliance',
+                icon: <Coins className="w-3 h-3 text-[#15803D]" />,
+                colors: { bg: 'bg-[#F0FDF4]', border: 'border-[#BBF7D0]', iconBg: 'bg-white', text: 'text-[#14532D]', iconColor: 'text-[#15803D]' }
+            };
+        } else if (name.includes('strategy') || name.includes('strategist')) {
+            return {
+                label: 'Agent Strategy',
+                icon: <Lightbulb className="w-3 h-3 text-[#1D4ED8]" />,
+                colors: { bg: 'bg-[#EFF6FF]', border: 'border-[#BFDBFE]', iconBg: 'bg-white', text: 'text-[#1E3A8A]', iconColor: 'text-[#2563EB]' }
+            };
+        }
+        // Default
+        return {
+            label: `Agent ${agentName.charAt(0).toUpperCase() + agentName.slice(1)}`,
+            icon: <Info className="w-3 h-3 text-gray-500" />,
+            colors: { bg: 'bg-gray-50', border: 'border-gray-200', iconBg: 'bg-white', text: 'text-gray-700', iconColor: 'text-gray-500' }
+        };
     };
 
     const renderStepIcon = (step: Step, index: number) => {
@@ -559,6 +625,18 @@ function Split() {
                                     <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#064E3B]"></div>
                                 )}
                             </button>
+                            <button
+                                onClick={() => setRightPanelTab('refine')}
+                                className={`flex-1 py-4 text-sm font-semibold transition-all relative ${rightPanelTab === 'refine'
+                                    ? 'text-[#064E3B]'
+                                    : 'text-gray-500 hover:text-gray-700'
+                                    }`}
+                            >
+                                Refine
+                                {rightPanelTab === 'refine' && (
+                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#064E3B]"></div>
+                                )}
+                            </button>
                         </div>
 
                         {rightPanelTab === 'analysis' ? (
@@ -607,7 +685,7 @@ function Split() {
 
                                                 <div className="relative group/share">
                                                     <button
-                                                        onClick={downloadRefinedPdf}
+                                                        onClick={handleShare}
                                                         className="flex items-center gap-2 bg-[#0C4522] text-white text-xs font-medium px-4 py-2 rounded-full shadow-lg hover:bg-[#09361a] transition-all"
                                                     >
                                                         <Share2 className="w-3.5 h-3.5" />
@@ -674,20 +752,14 @@ function Split() {
                                             <button
                                                 onClick={() => {
                                                     setShowCorrectionInput(true);
-                                                    setShowRefineInput(false);
-                                                    setRefineChoice('');
-                                                    setRefineText('');
+                                                    setCorrectionText('');
                                                 }}
                                                 className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all"
                                             >
                                                 Correct agent
                                             </button>
                                             <button
-                                                onClick={() => {
-                                                    setShowRefineInput(true);
-                                                    setShowCorrectionInput(false);
-                                                    setCorrectionText('');
-                                                }}
+                                                onClick={() => setRightPanelTab('refine')}
                                                 className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all flex items-center justify-center gap-2"
                                             >
                                                 Refine contract
@@ -707,63 +779,6 @@ function Split() {
                                                         console.log('Send correction:', correctionText);
                                                         setCorrectionText('');
                                                         setShowCorrectionInput(false);
-                                                    }}
-                                                    className="bg-[#166534] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#14532d] transition-all"
-                                                >
-                                                    Send
-                                                </button>
-                                            </div>
-                                        )}
-                                        {showRefineInput && (
-                                            <div className="mt-4 space-y-3">
-                                                <div className="flex items-center gap-2 text-sm text-gray-700">
-                                                    <span>How you wanna refine it?</span>
-                                                    <div className="relative">
-                                                        <button
-                                                            onClick={() => setRefineChoice('Balanced')}
-                                                            className={`px-4 py-2 rounded-lg border text-sm font-semibold flex items-center gap-1 ${refineChoice === 'Balanced' ? 'bg-[#166534] text-white border-[#166534]' : 'border-gray-200 text-gray-700'}`}
-                                                        >
-                                                            A. Balanced
-                                                            <span className="relative group/info flex items-center">
-                                                                <Info className="w-3.5 h-3.5" />
-                                                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-lg py-1.5 px-3 whitespace-nowrap opacity-0 pointer-events-none group-hover/info:opacity-100 transition-opacity z-50">
-                                                                    Balanced: aims for mutual fairness in obligations and benefits.
-                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                                                </div>
-                                                            </span>
-                                                        </button>
-                                                    </div>
-                                                    <div className="relative">
-                                                        <button
-                                                            onClick={() => setRefineChoice('Unilateral')}
-                                                            className={`px-4 py-2 rounded-lg border text-sm font-semibold flex items-center gap-1 ${refineChoice === 'Unilateral' ? 'bg-[#166534] text-white border-[#166534]' : 'border-gray-200 text-gray-700'}`}
-                                                        >
-                                                            B. Unilateral
-                                                            <span className="relative group/info flex items-center">
-                                                                <Info className="w-3.5 h-3.5" />
-                                                                <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs rounded-lg py-1.5 px-3 whitespace-nowrap opacity-0 pointer-events-none group-hover/info:opacity-100 transition-opacity z-50">
-                                                                    Unilateral: favors one party's position more heavily.
-                                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-                                                                </div>
-                                                            </span>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <textarea
-                                                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-black focus:outline-none"
-                                                    rows={3}
-                                                    placeholder="Anything other than missing, critical & negotiable?"
-                                                    value={refineText}
-                                                    onChange={(e) => setRefineText(e.target.value)}
-                                                />
-                                                <button
-                                                    onClick={() => {
-                                                        if (currentReviewId) {
-                                                            window.open(`http://localhost:8000/api/reviews/${currentReviewId}/export/pdf`, '_blank');
-                                                        }
-                                                        setRefineChoice('');
-                                                        setRefineText('');
-                                                        setShowRefineInput(false);
                                                     }}
                                                     className="bg-[#166534] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#14532d] transition-all"
                                                 >
@@ -908,45 +923,60 @@ function Split() {
                                         Council Opinions
                                     </div>
 
-                                    {/* Agent 1: Risk */}
-                                    <details className="group bg-[#FFF1F2] border border-[#FECDD3] rounded-xl" open>
-                                        <summary className="flex items-center justify-between p-4 cursor-pointer list-none rounded-xl transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-[#FECDD3]">
-                                                    <ShieldAlert className="w-3 h-3 text-[#BE123C]" />
-                                                </div>
-                                                <span className="text-xs font-semibold text-[#881337]">Agent Risk</span>
-                                            </div>
-                                            <Plus className="w-3 h-3 text-[#9F1239] group-open:rotate-45 transition-transform" />
-                                        </summary>
-                                        <div className="px-4 pb-4 pt-0">
-                                            <p className="text-[11px] text-[#9F1239] leading-relaxed pl-9">
-                                                Strongly advise rejecting Section 8.2 due to lack of mutual indemnification. This is non-standard
-                                                for your jurisdiction.
-                                            </p>
-                                        </div>
-                                    </details>
-
                                     {/* Agent 2: Finance */}
-                                    <details className="group bg-[#F0FDF4] border border-[#BBF7D0] rounded-xl">
-                                        <summary className="flex items-center justify-between p-4 cursor-pointer list-none rounded-xl transition-colors">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center border border-[#BBF7D0]">
-                                                    <Coins className="w-3 h-3 text-[#15803D]" />
-                                                </div>
-                                                <span className="text-xs font-semibold text-[#14532D]">Agent Finance</span>
-                                            </div>
-                                            <Plus className="w-3 h-3 text-[#15803D] group-open:rotate-45 transition-transform" />
-                                        </summary>
-                                        <div className="px-4 pb-4 pt-0">
-                                            <p className="text-[11px] text-[#14532D] leading-relaxed pl-9">
-                                                Payment terms (Net 30) align with company fiscal policy. No issues detected.
-                                            </p>
-                                        </div>
-                                    </details>
+                                    {isCouncilLoading ? (
+                                        <div className="text-center py-4 text-xs text-gray-400">Loading council insights...</div>
+                                    ) : (
+                                        councilData?.agents.map((agent, agentIdx) => {
+                                            const style = getAgentStyle(agent.agent_name);
+                                            return (
+                                                <details key={agentIdx} className={`group ${style.colors.bg} border ${style.colors.border} rounded-xl`} open={agentIdx === 0}>
+                                                    <summary className="flex items-center justify-between p-4 cursor-pointer list-none rounded-xl transition-colors">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`w-6 h-6 rounded-full ${style.colors.iconBg} flex items-center justify-center border ${style.colors.border}`}>
+                                                                {style.icon}
+                                                            </div>
+                                                            <span className={`text-xs font-semibold ${style.colors.text}`}>{style.label}</span>
+                                                        </div>
+                                                        <Plus className={`w-3 h-3 ${style.colors.iconColor} group-open:rotate-45 transition-transform`} />
+                                                    </summary>
+                                                    <div className="px-4 pb-4 pt-0">
+                                                        <p className={`text-[11px] ${style.colors.text} leading-relaxed pl-9 whitespace-pre-wrap`}>
+                                                            {agent.summary || "No specific summary provided."}
+                                                        </p>
+                                                        {agent.final_findings > 0 && (
+                                                            <div className="pl-9 mt-2 hidden group-open:block">
+                                                                <div className="text-[10px] opacity-70 mb-1 font-semibold uppercase">Findings count: {agent.final_findings}</div>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Raw Responses */}
+                                                        <div className="pl-9 mt-4 space-y-4 hidden group-open:block">
+                                                            {agent.llm_responses?.map((resp, idx) => (
+                                                                <div key={idx} className="border-t border-black/5 pt-3">
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{resp.model}</span>
+                                                                        <span className="text-[9px] bg-black/5 px-1.5 py-0.5 rounded text-gray-500">{resp.provider}</span>
+                                                                        <span className="text-[9px] text-gray-400">{resp.response_time_ms}ms</span>
+                                                                    </div>
+                                                                    <pre className="text-[10px] font-mono bg-white/50 p-3 rounded-lg border border-black/5 overflow-x-auto whitespace-pre-wrap text-gray-600">
+                                                                        {resp.raw_response}
+                                                                    </pre>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </details>
+                                            );
+                                        })
+                                    )}
+                                    {/* Fallback if no data and not loading */}
+                                    {!isCouncilLoading && !councilData && (
+                                        <div className="text-center py-4 text-xs text-gray-400">No council data available.</div>
+                                    )}
                                 </div>
                             </div>
-                        ) : (
+                        ) : rightPanelTab === 'chat' ? (
                             /* CHAT ASSISTANT CONTENT */
                             <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#F8FAFC]">
                                 {/* Chat Header Info */}
@@ -1102,6 +1132,12 @@ function Split() {
                                     </div>
                                 </div>
                             </div>
+                        ) : (
+                            <RefineTab onDownload={() => {
+                                if (currentReviewId) {
+                                    window.open(`http://localhost:8000/api/reviews/${currentReviewId}/export/pdf`, '_blank');
+                                }
+                            }} />
                         )}
                     </div>
                 </div>

@@ -11,12 +11,29 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# Create database engine
-engine = create_engine(
-    settings.database_url,
-    echo=settings.debug,
-    pool_pre_ping=True
-)
+# Create database engine with dual-mode support
+# Automatically detects SQLite vs PostgreSQL from DATABASE_URL
+is_sqlite = settings.database_url.startswith("sqlite")
+
+if is_sqlite:
+    # SQLite configuration (for local development)
+    engine = create_engine(
+        settings.database_url,
+        connect_args={"check_same_thread": False},  # Required for SQLite with FastAPI
+        echo=settings.debug,
+        pool_pre_ping=True
+    )
+    logger.info("Using SQLite database (local mode)")
+else:
+    # PostgreSQL configuration (for Supabase/production)
+    engine = create_engine(
+        settings.database_url,
+        echo=settings.debug,
+        pool_pre_ping=True,  # Verify connections before using
+        pool_size=10,        # Connection pool size
+        max_overflow=20      # Max connections beyond pool_size
+    )
+    logger.info("Using PostgreSQL database (production mode)")
 
 # Session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -22,6 +22,7 @@ async def get_council_responses(
     
     Note: Only available for reviews created after this feature was deployed.
     """
+    from app.services.llm_service import llm_service
     import json
     
     try:
@@ -104,11 +105,33 @@ async def get_council_responses(
                 )
             
             summary_parts.append(f"Final after dedup: {final_findings} findings.")
+            initial_stats = " ".join(summary_parts)
+            
+            # Generate LLM summary of the raw responses
+            prompt = f"""
+            You are a helpful legal assistant. Summarize the following findings/responses from multiple AI models regarding a contract review for the '{agent_name}' role.
+            Focus on the key risks or points identified. Keep it to a SINGLE paragraph.
+            
+            Responses:
+            {json.dumps([{'model': r.model, 'response': r.raw_response} for r in llm_resps], indent=2)}
+            """
+            
+            try:
+                # Use referee (Gemini) for summarization as it's free/fast
+                llm_result = await llm_service.gemini_referee.generate(prompt)
+                if llm_result['success']:
+                    llm_summary = llm_result['content']
+                else:
+                    llm_summary = "AI summarization unavailable."
+            except Exception as e:
+                logger.error(f"Summarization failed: {e}")
+                llm_summary = "AI summarization failed."
+
             
             agent_councils.append(AgentCouncilResponse(
                 agent_name=agent_name,
                 llm_responses=llm_resps,
-                summary=" ".join(summary_parts),
+                summary=f"{llm_summary}\n\nSTATS: {initial_stats}",
                 total_findings=total_findings_before_dedup,
                 final_findings=final_findings
             ))

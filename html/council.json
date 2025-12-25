@@ -1,0 +1,221 @@
+{
+  "review_id": "rev_831f59289236",
+  "agents": [
+    {
+      "agent_name": "auditor",
+      "llm_responses": [
+        {
+          "provider": "mistral",
+          "model": "mistral-large-latest",
+          "raw_response": "```json\n[]\n```",
+          "findings": [],
+          "confidence": 1,
+          "response_time_ms": 0
+        },
+        {
+          "provider": "groq",
+          "model": "llama-3.3-70b-versatile",
+          "raw_response": "[]",
+          "findings": [],
+          "confidence": 1,
+          "response_time_ms": 0
+        }
+      ],
+      "summary": "2 LLMs responded. Total findings before dedup: 0. mistral-large-latest: 0 findings (0ms). llama-3.3-70b-versatile: 0 findings (0ms). Final after dedup: 0 findings.",
+      "total_findings": 0,
+      "final_findings": 0
+    },
+    {
+      "agent_name": "skeptic",
+      "llm_responses": [
+        {
+          "provider": "mistral",
+          "model": "mistral-large-latest",
+          "raw_response": "```json\n[\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"The Company reserves the right to unilaterally modify the scope, deliverables, and deadlines at any time without prior notice or adjustment to compensation.\",\n        \"advice\": \"Demand a mutual agreement clause for scope changes, or at minimum, require written notice and compensation adjustment for material changes. Unilateral modification rights without notice or compensation adjustment are exploitative and legally risky under Indian labour principles (e.g., Section 7 of the Contract Labour (Regulation and Abolition) Act, 1970).\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"A. Company Rights: The Company may terminate this Agreement immediately at any time, with or without cause, and without penalty. B. Consultant Rights: The Consultant may only terminate this Agreement upon providing one hundred and twenty (120) days' written notice. Early termination by the Consultant shall result in a penalty fee equal to 50% of total fees paid to date.\",\n        \"advice\": \"This termination clause is grossly one-sided and likely unenforceable under Indian law (e.g., Section 27 of the Indian Contract Act, 1872, for restraint of trade). Demand symmetry: either both parties have 30 days' notice with no penalty, or negotiate a mutual immediate termination clause with severance (e.g., 1-3 months' pay).\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"Payment shall be made Net-90 days after the Company has received payment from its own clients for the relevant project (e.g., the \\\"Project Alpha\\\" deliverable).\",\n        \"advice\": \"Net-90 payment terms tied to the Company's receipt of client payments are illegal under the Payment of Wages Act, 1936 (Section 5), which mandates timely payment. Demand payment within 15-30 days of invoice submission, with late fees (e.g., 1.5% per month) for delays.\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"The Company reserves the right to withhold or reduce payment if, in its sole discretion, the work product does not meet the Companyʼs subjective standards of quality, specifically concerning code efficiency and comment clarity.\",\n        \"advice\": \"Subjective quality standards enable arbitrary payment denial. Demand objective, pre-agreed acceptance criteria (e.g., unit test coverage, performance benchmarks) and a dispute resolution process (e.g., third-party code review) before payment can be withheld.\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"The Consultant shall bear all expenses incurred in the performance of services, including travel, software licenses (e.g., Advanced Statistical Modeling Suite), and equipment.\",\n        \"advice\": \"Employers cannot shift all operational costs to employees under Indian law (e.g., Section 22 of the Contract Labour Act). Negotiate a reimbursement clause for reasonable expenses (e.g., software licenses >$100) or a monthly stipend (e.g., $500) for tools/equipment.\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"A. Work Product: Consultant agrees that all work, ideas, inventions, and code created during the term of this Agreement—whether created during business hours or on the Consultantʼs personal time—shall be the sole and exclusive property of the Company. B. Pre-existing IP: Consultant hereby assigns to the Company all rights to any intellectual property the Consultant developed prior to this Agreement that is in any way related to the Companyʼs business, specifically including the \\\"Mercury\\\" data indexing algorithm.\",\n        \"advice\": \"This IP clause is overbroad and likely unenforceable under Indian copyright law (e.g., Section 17 of the Copyright Act, 1957). Limit assignment to work (1) created during business hours, (2) using Company resources, or (3) within the scope of services. Exclude pre-existing IP unless explicitly licensed (not assigned) for a fee. Demand a carve-out for open-source contributions.\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"During the term of this Agreement, the Consultant shall not provide services to any other entity, person, or business without the express written consent of the Company.\",\n        \"advice\": \"Exclusivity clauses are illegal restraints of trade under Section 27 of the Indian Contract Act. Demand removal of this clause or limit it to direct competitors (defined narrowly) during business hours only. Add a carve-out for pro bono/charity work.\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"A. Indemnity: The Consultant agrees to indemnify, defend, and hold harmless the Company from any and all claims, damages, losses, and expenses (including legal fees) arising out of the Consultantʼs work, regardless of whether the Company was partially at fault. B. Limitation of Liability: The Companyʼs total liability to the Consultant under this Agreement for any cause whatsoever shall not exceed the total fees paid to the Consultant in the one (1) month preceding the claim.\",\n        \"advice\": \"This indemnity clause is unconscionable. Demand mutual indemnity (Company also indemnifies Consultant for its negligence) and cap liability at 3-6 months' fees. Exclude claims arising from the Company's gross negligence or willful misconduct. The current cap is dangerously low and may violate Section 23 of the Indian Contract Act (public policy).\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"A. Non-Compete: For a period of three (3) years following the termination of this Agreement, the Consultant shall not work for, consult with, or own any interest in any business that competes with the Company anywhere in the world. B. Liquidated Damages: Breach of this section shall result in immediate liquidated damages of $50,000 USD payable by the Consultant to the Company.\",\n        \"advice\": \"This non-compete is unenforceable under Indian law (Section 27 of the Contract Act) and violates the right to livelihood. Demand removal of the non-compete or limit it to 6-12 months, a specific geographic region (e.g., India), and direct competitors only. The $50,000 liquidated damages are punitive and should be removed entirely.\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"Any disputes arising under this Agreement shall be resolved by binding arbitration located in Santa Clara, California. The Consultant agrees to pay all costs associated with the arbitration, including the Companyʼs legal fees, regardless of the outcome.\",\n        \"advice\": \"This dispute resolution clause is oppressive. Demand arbitration in India (e.g., Mumbai) under Indian law, with costs split 50/50. The current clause violates Section 28 of the Indian Contract Act (unfair terms) and may be void. Add a provision for interim relief in Indian courts for urgent matters.\"\n    },\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"Moral Rights: Consultant irrevocably waives all moral rights to the work product.\",\n        \"advice\": \"Moral rights (e.g., attribution, integrity) are inalienable under Section 57 of the Indian Copyright Act. This waiver is unenforceable. Demand removal of this clause or limit it to waiving rights for modifications made by the Company (not third parties).\"\n    }\n]\n```",
+          "findings": [],
+          "confidence": 1,
+          "response_time_ms": 0
+        },
+        {
+          "provider": "groq",
+          "model": "llama-3.3-70b-versatile",
+          "raw_response": "[\n    {\n        \"category\": \"CRITICAL\",\n        \"quote\": \"The Company may terminate this Agreement immediately at any time, with or without cause, and without penalty.\",\n        \"advice\": \"Negotiate for a notice period or severance package to protect against sudden termination without compensation.\"\n    },\n    {\n        \"quote\": \"Early termination by the Consultant shall result in a penalty fee equal to 50% of total fees paid to date.\",\n        \"advice\": \"Request removal or reduction of the penalty fee to prevent unfair financial penalties for early termination.\"\n    },\n    {\n        \"quote\": \"The Company reserves the right to withhold or reduce payment if, in its sole discretion, the work product does not meet the Companyʼs subjective standards of quality\",\n        \"advice\": \"Establish clear, objective quality standards and a dispute resolution process to prevent unfair payment withholding.\"\n    },\n    {\n        \"quote\": \"Consultant agrees that all work, ideas, inventions, and code created during the term of this Agreement—whether created during business hours or on the Consultantʼs personal time—shall be the sole and exclusive property of the Company.\",\n        \"advice\": \"Limit intellectual property assignment to work created within the scope of the project and during work hours to protect personal inventions and ideas.\"\n    },\n    {\n        \"quote\": \"Consultant hereby assigns to the Company all rights to any intellectual property the Consultant developed prior to this Agreement that is in any way related to the Companyʼs business\",\n        \"advice\": \"Remove this clause to prevent the loss of pre-existing intellectual property rights and potential future income.\"\n    },\n    {\n        \"quote\": \"The Consultant agrees to indemnify, defend, and hold harmless the Company from any and all claims, damages, losses, and expenses (including legal fees) arising out of the Consultantʼs work, regardless of whether the Company was partially at fault.\",\n        \"advice\": \"Limit indemnification to cases where the Consultant is solely at fault to prevent unfair liability for Company-related errors.\"\n    },\n    {\n        \"quote\": \"The Companyʼs total liability to the Consultant under this Agreement for any cause whatsoever shall not exceed the total fees paid to the Consultant in the one (1) month preceding the claim.\",\n        \"advice\": \"Increase the liability cap to a reasonable amount to ensure the Company takes responsibility for its actions and provides adequate compensation for damages.\"\n    },\n    {\n        \"quote\": \"For a period of three (3) years following the termination of this Agreement, the Consultant shall not work for, consult with, or own any interest in any business that competes with the Company anywhere in the world.\",\n        \"advice\": \"Negotiate a narrower non-compete clause, limiting the scope to the specific services provided and the geographic area where the Company operates.\"\n    },\n    {\n        \"quote\": \"The Consultant agrees to pay all costs associated with the arbitration, including the Companyʼs legal fees, regardless of the outcome.\",\n        \"advice\": \"Request a more balanced arbitration cost-sharing arrangement to prevent unfair financial burdens on the Consultant.\"\n    }\n]",
+          "findings": [
+            {
+              "category": "CRITICAL",
+              "quote": "The Company may terminate this Agreement immediately at any time, with or without cause, and without penalty.",
+              "advice": "Negotiate for a notice period or severance package to protect against sudden termination without compensation."
+            },
+            {
+              "quote": "Early termination by the Consultant shall result in a penalty fee equal to 50% of total fees paid to date.",
+              "advice": "Request removal or reduction of the penalty fee to prevent unfair financial penalties for early termination."
+            },
+            {
+              "quote": "The Company reserves the right to withhold or reduce payment if, in its sole discretion, the work product does not meet the Companyʼs subjective standards of quality",
+              "advice": "Establish clear, objective quality standards and a dispute resolution process to prevent unfair payment withholding."
+            },
+            {
+              "quote": "Consultant agrees that all work, ideas, inventions, and code created during the term of this Agreement—whether created during business hours or on the Consultantʼs personal time—shall be the sole and exclusive property of the Company.",
+              "advice": "Limit intellectual property assignment to work created within the scope of the project and during work hours to protect personal inventions and ideas."
+            },
+            {
+              "quote": "Consultant hereby assigns to the Company all rights to any intellectual property the Consultant developed prior to this Agreement that is in any way related to the Companyʼs business",
+              "advice": "Remove this clause to prevent the loss of pre-existing intellectual property rights and potential future income."
+            },
+            {
+              "quote": "The Consultant agrees to indemnify, defend, and hold harmless the Company from any and all claims, damages, losses, and expenses (including legal fees) arising out of the Consultantʼs work, regardless of whether the Company was partially at fault.",
+              "advice": "Limit indemnification to cases where the Consultant is solely at fault to prevent unfair liability for Company-related errors."
+            },
+            {
+              "quote": "The Companyʼs total liability to the Consultant under this Agreement for any cause whatsoever shall not exceed the total fees paid to the Consultant in the one (1) month preceding the claim.",
+              "advice": "Increase the liability cap to a reasonable amount to ensure the Company takes responsibility for its actions and provides adequate compensation for damages."
+            },
+            {
+              "quote": "For a period of three (3) years following the termination of this Agreement, the Consultant shall not work for, consult with, or own any interest in any business that competes with the Company anywhere in the world.",
+              "advice": "Negotiate a narrower non-compete clause, limiting the scope to the specific services provided and the geographic area where the Company operates."
+            },
+            {
+              "quote": "The Consultant agrees to pay all costs associated with the arbitration, including the Companyʼs legal fees, regardless of the outcome.",
+              "advice": "Request a more balanced arbitration cost-sharing arrangement to prevent unfair financial burdens on the Consultant."
+            }
+          ],
+          "confidence": 1,
+          "response_time_ms": 0
+        }
+      ],
+      "summary": "2 LLMs responded. Total findings before dedup: 9. mistral-large-latest: 0 findings (0ms). llama-3.3-70b-versatile: 9 findings (0ms). Final after dedup: 12 findings.",
+      "total_findings": 9,
+      "final_findings": 12
+    },
+    {
+      "agent_name": "strategist",
+      "llm_responses": [
+        {
+          "provider": "mistral",
+          "model": "mistral-large-latest",
+          "raw_response": "```json\n[\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Add a clause specifying the job title, detailed role description, and work location to clarify expectations and avoid scope creep.\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Include a probation period clause (typically 3-6 months) to allow both parties to assess fit, even if this is a consulting agreement.\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Add a payment schedule clause ensuring monthly payments (as per Payment of Wages Act requirements if applicable). The current Net-90 payment term is exploitative.\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Include statutory benefits such as Provident Fund (PF), Employee State Insurance (ESI), and Gratuity provisions if the consultant is treated as an employee under Indian law.\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Add a clause detailing working hours, overtime compensation, and leave entitlements (e.g., casual leave, sick leave, earned leave) to comply with Indian labour laws.\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Include a grievance redressal mechanism to provide a formal process for resolving disputes, as required by Indian labour laws.\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Add a statement of compliance with applicable Indian labour laws (e.g., Industrial Disputes Act, Payment of Wages Act, Minimum Wages Act).\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Include a clause for professional development or training budget to support the consultant's growth and skill enhancement.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Company reserves the right to unilaterally modify the scope, deliverables, and deadlines at any time without prior notice or adjustment to compensation.\",\n        \"advice\": \"Negotiate to limit unilateral changes to scope/deliverables. Propose a mutual agreement requirement for significant changes or compensation adjustments for additional work.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Company Rights: The Company may terminate this Agreement immediately at any time, with or without cause, and without penalty. Consultant Rights: The Consultant may only terminate this Agreement upon providing one hundred and twenty (120) days' written notice. Early termination by the Consultant shall result in a penalty fee equal to 50% of total fees paid to date.\",\n        \"advice\": \"Negotiate for equal termination rights. Propose a 30-90 day notice period for both parties and remove the penalty fee for early termination by the consultant.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Payment shall be made Net-90 days after the Company has received payment from its own clients for the relevant project.\",\n        \"advice\": \"Negotiate for a shorter payment term (e.g., Net-30 or Net-15) to improve cash flow. Push for payment upon submission of invoices or completion of milestones.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Company reserves the right to withhold or reduce payment if, in its sole discretion, the work product does not meet the Companyʼs subjective standards of quality, specifically concerning code efficiency and comment clarity.\",\n        \"advice\": \"Negotiate for objective quality standards or a third-party review process to avoid arbitrary payment reductions. Propose a dispute resolution mechanism for payment disputes.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Consultant shall bear all expenses incurred in the performance of services, including travel, software licenses (e.g., Advanced Statistical Modeling Suite), and equipment.\",\n        \"advice\": \"Negotiate for reimbursement of reasonable business expenses or provide an expense stipend. At minimum, request the company cover essential software licenses and equipment.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Consultant agrees that all work, ideas, inventions, and code created during the term of this Agreement—whether created during business hours or on the Consultantʼs personal time—shall be the sole and exclusive property of the Company.\",\n        \"advice\": \"Negotiate to limit IP assignment to work-related creations during business hours. Exclude personal projects or pre-existing IP not directly related to the company's business.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Consultant hereby assigns to the Company all rights to any intellectual property the Consultant developed prior to this Agreement that is in any way related to the Companyʼs business, specifically including the \\\"Mercury\\\" data indexing algorithm.\",\n        \"advice\": \"Remove this clause entirely. Pre-existing IP should not be assigned to the company. At most, negotiate a limited license for the company's use of specific pre-existing IP.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Moral Rights: Consultant irrevocably waives all moral rights to the work product.\",\n        \"advice\": \"Remove or limit this clause. Moral rights (e.g., right to attribution) are protected under Indian copyright law and should not be waived without consideration.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"During the term of this Agreement, the Consultant shall not provide services to any other entity, person, or business without the express written consent of the Company.\",\n        \"advice\": \"Negotiate to remove or limit the exclusivity clause. Propose non-exclusivity or exclusivity limited to direct competitors only.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Consultant agrees to indemnify, defend, and hold harmless the Company from any and all claims, damages, losses, and expenses (including legal fees) arising out of the Consultantʼs work, regardless of whether the Company was partially at fault.\",\n        \"advice\": \"Negotiate for a mutual indemnification clause. Propose that the company also indemnifies the consultant for claims arising from the company's actions or negligence.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Companyʼs total liability to the Consultant under this Agreement for any cause whatsoever shall not exceed the total fees paid to the Consultant in the one (1) month preceding the claim.\",\n        \"advice\": \"Negotiate to increase the liability cap to a more reasonable amount (e.g., total fees paid in the preceding 6-12 months) or remove the cap entirely for gross negligence or willful misconduct.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Non-Compete: For a period of three (3) years following the termination of this Agreement, the Consultant shall not work for, consult with, or own any interest in any business that competes with the Company anywhere in the world.\",\n        \"advice\": \"Negotiate to reduce the non-compete duration (e.g., 6-12 months) and limit the geographic scope to regions where the company operates. Ensure it complies with Indian Contract Act Section 27 (reasonable restraint of trade).\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Breach of this section shall result in immediate liquidated damages of $50,000 USD payable by the Consultant to the Company.\",\n        \"advice\": \"Negotiate to remove or reduce the liquidated damages amount. Propose that damages be limited to actual harm proven by the company.\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Any disputes arising under this Agreement shall be resolved by binding arbitration located in Santa Clara, California. The Consultant agrees to pay all costs associated with the arbitration, including the Companyʼs legal fees, regardless of the outcome.\",\n        \"advice\": \"Negotiate for a neutral arbitration location (e.g., a mutually agreed-upon city in India) and split arbitration costs equally. Remove the clause requiring the consultant to pay the company's legal fees.\"\n    }\n]\n```",
+          "findings": [],
+          "confidence": 1,
+          "response_time_ms": 0
+        },
+        {
+          "provider": "groq",
+          "model": "llama-3.3-70b-versatile",
+          "raw_response": "[\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Job title and detailed role description should be added\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Probation period should be specified, typically 3-6 months\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Department and reporting structure should be included\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Start date and work location should be specified\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Working hours per day/week should be defined, with a maximum of 48 hours/week\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Paid leave entitlements, including Casual Leave, Sick Leave, and Earned Leave, should be outlined\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Maternity Leave and Paternity Leave policies should be included\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Public holidays should be specified\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Grievance redressal mechanism should be established\"\n    },\n    {\n        \"category\": \"MISSING\",\n        \"quote\": null,\n        \"advice\": \"Statement of compliance with applicable labour laws, including Industrial Disputes Act, Payment of Wages Act, and Minimum Wages Act, should be included\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Company may terminate this Agreement immediately at any time, with or without cause, and without penalty\",\n        \"advice\": \"Notice period for both employer and employee should be more balanced, typically 30-90 days\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Consultant may only terminate this Agreement upon providing one hundred and twenty (120) days' written notice\",\n        \"advice\": \"Notice period for the consultant could be negotiated to be more reasonable, considering the industry standards\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Early termination by the Consultant shall result in a penalty fee equal to 50% of total fees paid to date\",\n        \"advice\": \"Penalty fee for early termination by the consultant could be negotiated to be more reasonable\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Payment shall be made Net-90 days after the Company has received payment from its own clients for the relevant project\",\n        \"advice\": \"Payment terms could be negotiated to ensure more timely payments to the consultant\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Company reserves the right to withhold or reduce payment if, in its sole discretion, the work product does not meet the Company's subjective standards of quality\",\n        \"advice\": \"Payment terms could be negotiated to include more objective quality standards\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Consultant shall bear all expenses incurred in the performance of services\",\n        \"advice\": \"Expenses could be negotiated to be reimbursed by the company or included in the compensation package\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Consultant agrees that all work, ideas, inventions, and code created during the term of this Agreement shall be the sole and exclusive property of the Company\",\n        \"advice\": \"Intellectual property rights could be negotiated to ensure the consultant retains some rights to their work\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Consultant hereby assigns to the Company all rights to any intellectual property the Consultant developed prior to this Agreement\",\n        \"advice\": \"Assignment of pre-existing intellectual property rights could be negotiated to be more limited in scope\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"For a period of three (3) years following the termination of this Agreement, the Consultant shall not work for, consult with, or own any interest in any business that competes with the Company anywhere in the world\",\n        \"advice\": \"Non-compete clause could be negotiated to be more reasonable in terms of geographic scope and duration\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"Breach of this section shall result in immediate liquidated damages of $50,000 USD payable by the Consultant to the Company\",\n        \"advice\": \"Liquidated damages for breach of non-compete clause could be negotiated to be more reasonable\"\n    },\n    {\n        \"category\": \"NEGOTIABLE\",\n        \"quote\": \"The Consultant agrees to pay all costs associated with the arbitration, including the Company's legal fees, regardless of the outcome\",\n        \"advice\": \"Dispute resolution terms could be negotiated to ensure a more balanced allocation of costs\"\n    }\n]",
+          "findings": [
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Job title and detailed role description should be added"
+            },
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Probation period should be specified, typically 3-6 months"
+            },
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Department and reporting structure should be included"
+            },
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Start date and work location should be specified"
+            },
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Working hours per day/week should be defined, with a maximum of 48 hours/week"
+            },
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Paid leave entitlements, including Casual Leave, Sick Leave, and Earned Leave, should be outlined"
+            },
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Maternity Leave and Paternity Leave policies should be included"
+            },
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Public holidays should be specified"
+            },
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Grievance redressal mechanism should be established"
+            },
+            {
+              "category": "MISSING",
+              "quote": null,
+              "advice": "Statement of compliance with applicable labour laws, including Industrial Disputes Act, Payment of Wages Act, and Minimum Wages Act, should be included"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "The Company may terminate this Agreement immediately at any time, with or without cause, and without penalty",
+              "advice": "Notice period for both employer and employee should be more balanced, typically 30-90 days"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "The Consultant may only terminate this Agreement upon providing one hundred and twenty (120) days' written notice",
+              "advice": "Notice period for the consultant could be negotiated to be more reasonable, considering the industry standards"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "Early termination by the Consultant shall result in a penalty fee equal to 50% of total fees paid to date",
+              "advice": "Penalty fee for early termination by the consultant could be negotiated to be more reasonable"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "Payment shall be made Net-90 days after the Company has received payment from its own clients for the relevant project",
+              "advice": "Payment terms could be negotiated to ensure more timely payments to the consultant"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "The Company reserves the right to withhold or reduce payment if, in its sole discretion, the work product does not meet the Company's subjective standards of quality",
+              "advice": "Payment terms could be negotiated to include more objective quality standards"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "The Consultant shall bear all expenses incurred in the performance of services",
+              "advice": "Expenses could be negotiated to be reimbursed by the company or included in the compensation package"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "Consultant agrees that all work, ideas, inventions, and code created during the term of this Agreement shall be the sole and exclusive property of the Company",
+              "advice": "Intellectual property rights could be negotiated to ensure the consultant retains some rights to their work"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "Consultant hereby assigns to the Company all rights to any intellectual property the Consultant developed prior to this Agreement",
+              "advice": "Assignment of pre-existing intellectual property rights could be negotiated to be more limited in scope"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "For a period of three (3) years following the termination of this Agreement, the Consultant shall not work for, consult with, or own any interest in any business that competes with the Company anywhere in the world",
+              "advice": "Non-compete clause could be negotiated to be more reasonable in terms of geographic scope and duration"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "Breach of this section shall result in immediate liquidated damages of $50,000 USD payable by the Consultant to the Company",
+              "advice": "Liquidated damages for breach of non-compete clause could be negotiated to be more reasonable"
+            },
+            {
+              "category": "NEGOTIABLE",
+              "quote": "The Consultant agrees to pay all costs associated with the arbitration, including the Company's legal fees, regardless of the outcome",
+              "advice": "Dispute resolution terms could be negotiated to ensure a more balanced allocation of costs"
+            }
+          ],
+          "confidence": 1,
+          "response_time_ms": 0
+        }
+      ],
+      "summary": "2 LLMs responded. Total findings before dedup: 21. mistral-large-latest: 0 findings (0ms). llama-3.3-70b-versatile: 21 findings (0ms). Final after dedup: 33 findings.",
+      "total_findings": 21,
+      "final_findings": 33
+    }
+  ]
+}

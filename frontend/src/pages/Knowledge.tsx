@@ -8,7 +8,8 @@ import {
     ShieldCheck,
     FileText,
     Building2,
-    FileCheck
+    FileCheck,
+    Loader2
 } from 'lucide-react';
 
 const Knowledge = () => {
@@ -26,6 +27,30 @@ const Knowledge = () => {
 
     const handleToggle = (id: string) => {
         setToggles(prev => ({ ...prev, [id]: !prev[id] }));
+    };
+
+    // Upload Simulation State
+    const [extraDocs, setExtraDocs] = useState<any[]>([]);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+
+        // Simulate upload delay
+        setTimeout(() => {
+            const newDoc = {
+                id: `new-doc-${Date.now()}`,
+                title: 'Document 1', // Fixed name as requested, or could use file.name
+                meta: 'Just now • Uploaded',
+                active: true,
+                isUser: true
+            };
+            setExtraDocs(prev => [newDoc, ...prev]);
+            setIsUploading(false);
+        }, 2000);
     };
 
     return (
@@ -46,8 +71,9 @@ const Knowledge = () => {
                 {/* Center Tabs */}
                 <div className="hidden md:flex gap-8 text-sm font-medium">
                     <Link to="/dashboard" className="text-gray-400 hover:text-black transition-colors pb-5 mt-5">Dashboard</Link>
+                    <Link to="/dashboard" className="text-gray-400 hover:text-black transition-colors pb-5 mt-5">Calendar</Link>
                     <Link to="/knowledge" className="text-black border-b border-black pb-5 mt-5">Library</Link>
-                    <a href="#" className="text-gray-400 hover:text-black transition-colors pb-5 mt-5">Settings</a>
+                    <Link to="/dashboard" className="text-gray-400 hover:text-black transition-colors pb-5 mt-5">Settings</Link>
                 </div>
 
                 {/* User Menu */}
@@ -86,17 +112,35 @@ const Knowledge = () => {
 
                 {/* Upload Section */}
                 <section className="mb-8">
-                    <div className="w-full bg-white/50 border-[1.5px] border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-white/80 hover:border-green-800 hover:shadow-sm transition-all group">
-                        <div className="flex items-center gap-5">
-                            <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                                <CloudUpload className="w-6 h-6" />
+                    <input
+                        type="file"
+                        id="file-upload"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                        accept=".pdf,.docx,.txt"
+                    />
+                    <label
+                        htmlFor="file-upload"
+                        className={`w-full bg-white/50 border-[1.5px] border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-white/80 hover:border-green-800 hover:shadow-sm transition-all group ${isUploading ? 'opacity-75 pointer-events-none' : ''}`}
+                    >
+                        {isUploading ? (
+                            <div className="flex flex-col items-center animate-pulse">
+                                <Loader2 className="w-8 h-8 text-green-800 animate-spin mb-3" />
+                                <h3 className="font-sans font-semibold text-gray-900 mb-1">Uploading...</h3>
+                                <p className="text-sm text-gray-500">Please wait while we process your file.</p>
                             </div>
-                            <div>
-                                <h3 className="font-sans font-semibold text-gray-900 mb-1">Upload New Knowledge</h3>
-                                <p className="text-sm text-gray-500">Drag & drop PDF or DOCX files here, or <span className="text-green-800 underline font-medium">browse files</span></p>
+                        ) : (
+                            <div className="flex items-center gap-5">
+                                <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                                    <CloudUpload className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-sans font-semibold text-gray-900 mb-1">Upload New Knowledge</h3>
+                                    <p className="text-sm text-gray-500">Drag & drop PDF or DOCX files here, or <span className="text-green-800 underline font-medium">browse files</span></p>
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                        )}
+                    </label>
                 </section>
 
                 {/* Grid Layout */}
@@ -121,19 +165,19 @@ const Knowledge = () => {
                             {/* Doc Item */}
                             <DocCard
                                 icon={<FileText className="w-5 h-5" />}
-                                title="California Labor Laws 2024"
-                                meta="Updated 2 days ago • System"
+                                title="Indian Labor Laws 2025"
+                                meta="Updated 1 day ago • System"
                                 active={toggles['cal-labor']}
                                 onToggle={() => handleToggle('cal-labor')}
                             />
                             <DocCard
                                 icon={<FileText className="w-5 h-5" />}
-                                title="Standard NDA Template"
-                                meta="Updated 1 week ago • System"
+                                title="Bhartiya Nyay Sanhita (NDA) Summarized"
+                                meta="Updated 1 day ago • System"
                                 active={toggles['nda-template']}
                                 onToggle={() => handleToggle('nda-template')}
                             />
-                            <DocCard
+                            {/* <DocCard
                                 icon={<FileText className="w-5 h-5" />}
                                 title="GDPR Compliance Clause"
                                 meta="Updated 1 month ago • System"
@@ -146,7 +190,7 @@ const Knowledge = () => {
                                 meta="Updated 3 months ago • System"
                                 active={toggles['saas-msa']}
                                 onToggle={() => handleToggle('saas-msa')}
-                            />
+                            /> */}
                         </div>
                     </section>
 
@@ -167,6 +211,20 @@ const Knowledge = () => {
 
                         <div className="flex flex-col gap-3">
                             {/* User Doc Item */}
+                            {extraDocs.map((doc) => (
+                                <DocCard
+                                    key={doc.id}
+                                    icon={<FileCheck className="w-5 h-5" />}
+                                    title={doc.title}
+                                    meta={doc.meta}
+                                    isUser={doc.isUser}
+                                    active={doc.active}
+                                    onToggle={() => {
+                                        // Toggle logic for local items
+                                        setExtraDocs(prev => prev.map(d => d.id === doc.id ? { ...d, active: !d.active } : d));
+                                    }}
+                                />
+                            ))}
                             <DocCard
                                 icon={<FileCheck className="w-5 h-5" />}
                                 title="Internal Remote Work Policy"
@@ -178,12 +236,12 @@ const Knowledge = () => {
                             <DocCard
                                 icon={<FileCheck className="w-5 h-5" />}
                                 title="Q3 Sales Agreement_Final"
-                                meta="Uploaded yesterday"
+                                meta="Updated 1 day ago"
                                 isUser={true}
                                 active={toggles['sales-agreement']}
                                 onToggle={() => handleToggle('sales-agreement')}
                             />
-                            <DocCard
+                            {/* <DocCard
                                 icon={<FileCheck className="w-5 h-5" />}
                                 title="Vendor Code of Conduct"
                                 meta="Uploaded 2 weeks ago"
@@ -198,7 +256,7 @@ const Knowledge = () => {
                                 isUser={true}
                                 active={toggles['old-employment']}
                                 onToggle={() => handleToggle('old-employment')}
-                            />
+                            /> */}
                         </div>
                     </section>
 

@@ -47,6 +47,7 @@ class ContractReview(Base):
     review_points = relationship("ReviewPointDB", back_populates="review", cascade="all, delete-orphan")
     feedbacks = relationship("UserFeedback", back_populates="review", cascade="all, delete-orphan")
     llm_responses = relationship("AgentLLMResponse", back_populates="review", cascade="all, delete-orphan")
+    refinement_suggestions = relationship("RefinementSuggestion", back_populates="review", cascade="all, delete-orphan")
 
 
 class ReviewPointDB(Base):
@@ -104,3 +105,38 @@ class AgentLLMResponse(Base):
     
     # Relationship
     review = relationship("ContractReview", back_populates="llm_responses")
+
+
+class RefinementSuggestion(Base):
+    """Stores individual refinement suggestions for a review."""
+    __tablename__ = "refinement_suggestions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    review_id = Column(Integer, ForeignKey("contract_reviews.id"), nullable=False)
+    change_id = Column(String(50), unique=True, index=True, nullable=False)  # UUID
+    category = Column(String(20), nullable=False)  # CRITICAL/MISSING/NEGOTIABLE
+    original_clause = Column(Text, nullable=True)  # Null for missing clauses
+    improved_clause = Column(Text, nullable=False)
+    reasoning = Column(Text, nullable=False)
+    affected_issue = Column(Text, nullable=True)  # Related review point
+    refinement_mode = Column(String(20), default="balanced")  # balanced/unilateral
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    review = relationship("ContractReview", back_populates="refinement_suggestions")
+    feedback = relationship("RefinementFeedback", back_populates="suggestion", cascade="all, delete-orphan")
+
+
+class RefinementFeedback(Base):
+    """Stores user feedback on refinement suggestions."""
+    __tablename__ = "refinement_feedback"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    suggestion_id = Column(Integer, ForeignKey("refinement_suggestions.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String(10), nullable=False)  # 'accept' or 'ignore'
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    suggestion = relationship("RefinementSuggestion", back_populates="feedback")
+    user = relationship("User")

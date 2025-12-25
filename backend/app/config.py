@@ -67,6 +67,10 @@ class Settings(BaseSettings):
     vector_upload_batch_size: int = 20  # Smaller batches to avoid rate limits
     vector_upload_delay: float = 1.0  # Seconds between batches
     
+    trello_api_key: Optional[str] = None
+    trello_secret_key: Optional[str] = None
+    trello_token_key: Optional[str] = None
+    
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

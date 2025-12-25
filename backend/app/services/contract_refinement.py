@@ -163,10 +163,153 @@ REFINED CONTRACT:"""
         if negotiable_points:
             refined += "SUGGESTED IMPROVEMENTS:\n"
             for i, point in enumerate(negotiable_points[:8], 1):
-                refined += f"{i}. {point.advice}\n"
+                 refined += f"{i}. {point.advice}\n"
             refined += "\n"
         
         return refined
+    
+    async def generate_clause_comparisons(
+        self,
+        original_contract: str,
+        critical_points: List[ReviewPoint],
+        missing_points: List[ReviewPoint],
+        negotiable_points: List[ReviewPoint],
+        refinement_mode: str = "balanced"
+    ) -> List[dict]:
+        """
+        Generate clause-by-clause comparison for interactive refinement.
+        
+        Returns list of original vs improved clauses with reasoning.
+        Each item contains: change_id, category, original, improved, reasoning.
+        """
+        import uuid
+        
+        comparisons = []
+        
+        # Process critical points - must fix
+        for point in critical_points:
+            change_id = f"change_{str(uuid.uuid4())[:8]}"
+            comparisons.append({
+                "change_id": change_id,
+                "category": "CRITICAL",
+                "original_clause": point.quote if point.quote else None,
+                "improved_clause": await self._generate_improvement(point, original_contract, "CRITICAL", refinement_mode),
+                "reasoning": point.advice,
+                "affected_issue": point.advice[:100]
+            })
+        
+        # Process missing points - add new clauses
+        for point in missing_points:
+            change_id = f"change_{str(uuid.uuid4())[:8]}"
+            comparisons.append({
+                "change_id": change_id,
+                "category": "MISSING",
+                "original_clause": None,  # Missing clause
+                "improved_clause": await self._generate_improvement(point, original_contract, "MISSING", refinement_mode),
+                "reasoning": point.advice,
+                "affected_issue": point.advice[:100]
+            })
+        
+        # Process negotiable points - suggested improvements
+        for point in negotiable_points[:10]:  # Limit to avoid overwhelming
+            change_id = f"change_{str(uuid.uuid4())[:8]}"
+            comparisons.append({
+                "change_id": change_id,
+                "category": "NEGOTIABLE",
+                "original_clause": point.quote if point.quote else None,
+                "improved_clause": await self._generate_improvement(point, original_contract, "NEGOTIABLE", refinement_mode),
+                "reasoning": point.advice,
+                "affected_issue": point.advice[:100]
+            })
+        
+        logger.info(f"Generated {len(comparisons)} clause comparisons")
+        return comparisons
+    
+    async def _generate_improvement(self, point: ReviewPoint, original_contract: str, category: str, mode: str) -> str:
+        """Generate improved clause text for a specific issue."""
+        prompt = f"""Given this issue in an employment contract:
+
+ISSUE TYPE: {category}
+PROBLEM: {point.advice}
+ORIGINAL CLAUSE: {point.quote if point.quote else "(Missing from contract)"}
+
+Generate a brief, improved clause (2-3 sentences max) that addresses this issue.
+Mode: {mode}
+
+IMPROVED CLAUSE:"""
+        
+        try:
+            result = await self.llm_service.gemini_referee.generate(prompt=prompt)
+            if result["success"]:
+                return result["content"].strip()
+        except:
+            pass
+        
+        # Fallback: use the advice as the improvement
+        return point.advice
+    
+    async def apply_selected_changes(
+        self,
+        original_contract: str,
+        all_comparisons: List[dict],
+        accepted_change_ids: List[str]
+    ) -> str:
+        """
+        Apply only user-accepted changes to generate customized refined contract.
+        """
+        # Filter to accepted changes only
+        accepted_changes = [c for c in all_comparisons if c["change_id"] in accepted_change_ids]
+        
+        if not accepted_changes:
+            return original_contract
+        
+        # Build summary of accepted changes
+        critical = [c for c in accepted_changes if c["category"] == "CRITICAL"]
+        missing = [c for c in accepted_changes if c["category"] == "MISSING"]
+        negotiable = [c for c in accepted_changes if c["category"] == "NEGOTIABLE"]
+        
+        critical_text = "\n".join([f"- {c['improved_clause']}" for c in critical])
+        missing_text = "\n".join([f"- {c['improved_clause']}" for c in missing])
+        negotiable_text = "\n".join([f"- {c['improved_clause']}" for c in negotiable])
+        
+        prompt = f"""You are refining an employment contract with ONLY the changes the user accepted.
+
+ORIGINAL CONTRACT:
+{original_contract}
+
+USER-ACCEPTED CRITICAL FIXES ({len(critical)}):
+{critical_text if critical_text else "None"}
+
+USER-ACCEPTED MISSING CLAUSES ({len(missing)}):
+{missing_text if missing_text else "None"}
+
+USER-ACCEPTED IMPROVEMENTS ({len(negotiable)}):
+{negotiable_text if negotiable_text else "None"}
+
+TASK: Generate a refined contract that:
+1. Applies ONLY the user-accepted changes above
+2. Keeps everything else from the original contract unchanged
+3. Maintains professional legal formatting
+4. Integrates changes naturally into the contract structure
+
+Output ONLY the refined contract text, no explanations.
+
+REFINED CONTRACT:"""
+        
+        try:
+            result = await self.llm_service.gemini_referee.generate(prompt=prompt)
+            if result["success"]:
+                refined = result["content"].strip()
+                if refined.startswith("```"):
+                    lines = refined.split("\n")
+                    refined = "\n".join(lines[1:-1]) if len(lines) > 2 else refined
+                logger.info(f"Applied {len(accepted_changes)} user-accepted changes")
+                return refined
+        except Exception as e:
+            logger.error(f"Failed to apply changes: {e}")
+        
+        # Fallback: append changes to original
+        return original_contract + "\n\n=== ACCEPTED IMPROVEMENTS ===\n" + critical_text + missing_text + negotiable_text
 
 
 # Global instance

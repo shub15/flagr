@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overide - Control Center</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* --- CSS VARIABLES & RESET --- */
+        :root {
+            --primary-green: #145336; /* Hunter Green */
+            --primary-black: #0f172a;
+            --text-main: #1a1a1a;
+            --text-muted: #64748b;
+            --border-light: #e2e8f0;
+            --white: #ffffff;
+            
+            /* Risk Colors */
+            --risk-high-bg: #fee2e2;
+            --risk-high-text: #b91c1c;
+            --risk-med-bg: #fef3c7;
+            --risk-med-text: #b45309;
+            --risk-low-bg: #dcfce7;
+            --risk-low-text: #15803d;
+
+            --font-serif: "Playfair Display", serif;
+            --font-sans: "Inter", sans-serif;
+            
+            --radius-lg: 16px;
+            --radius-pill: 50px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(135deg, #EBF7F8 0%, #ffffff 50%, #F5F7FA 100%);
+            font-family: var(--font-sans);
+            color: var(--text-main);
+            padding-bottom: 60px;
+            min-height: 100vh;
+        }
+
+        /* --- NAV & HEADER --- */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 48px;
+        }
+        .logo { font-family: var(--font-serif); font-size: 24px; font-weight: 600; font-style: italic; }
+        .nav-links { display: flex; gap: 32px; }
+        .nav-links a { text-decoration: none; color: var(--text-muted); font-weight: 500; font-size: 14px; transition: 0.2s; }
+        .nav-links a.active { color: var(--text-main); border-bottom: 1px solid var(--text-main); }
+        .user-profile .avatar { width: 32px; height: 32px; background: var(--primary-black); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 48px; }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 32px;
+        }
+        .serif-title { font-family: var(--font-serif); font-size: 36px; font-weight: 400; color: var(--text-main); }
+        .subtitle { color: var(--text-muted); margin-top: 4px; }
+
+        .btn-primary {
+            background: var(--primary-black);
+            color: white;
+            padding: 10px 20px;
+            border-radius: var(--radius-pill);
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+            transition: transform 0.1s;
+        }
+        .btn-primary:hover { transform: translateY(-1px); }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-main);
+            border: 1px solid var(--border-light);
+            padding: 10px 20px;
+            border-radius: var(--radius-pill);
+            margin-right: 12px;
+            cursor: pointer;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+
+        /* --- GLASS PANEL UTILITY --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+
+        /* --- CALENDAR SECTION --- */
+        .calendar-section { padding: 24px; margin-bottom: 40px; }
+
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .month-title { font-family: var(--font-serif); font-size: 24px; font-weight: 500; margin-right: 16px; }
+        .nav-arrows .icon-btn { background: none; border: none; font-size: 18px; padding: 8px; cursor: pointer; color: var(--text-main); }
+
+        .cal-filters { display: flex; gap: 16px; align-items: center; }
+        .toggle-group { background: #f1f5f9; padding: 4px; border-radius: var(--radius-pill); display: flex; }
+        .toggle-btn { background: transparent; border: none; padding: 6px 16px; font-size: 13px; font-weight: 500; color: var(--text-muted); border-radius: 20px; cursor: pointer; }
+        .toggle-btn.active { background: white; color: var(--text-main); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+
+        .filter-pill { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot.red { background: var(--risk-high-text); }
+        .dot.yellow { background: var(--risk-med-text); }
+        .dot.green { background: var(--risk-low-text); }
+
+        /* Calendar Grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1px;
+            background: var(--border-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .day-name { background: #f8fafc; padding: 12px; text-align: center; font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .cal-day {
+            background: white;
+            min-height: 120px;
+            padding: 12px;
+            position: relative;
+            transition: background 0.2s;
+        }
+        .cal-day:hover { background: #fafafa; }
+        .cal-day.faded { background: #fcfcfc; color: #cbd5e1; }
+        .cal-day.current-day { background: #f0fdf4; }
+
+        .day-number { font-size: 14px; font-weight: 500; color: var(--text-muted); display: block; margin-bottom: 8px; }
+        .current-day .day-number { color: var(--primary-green); font-weight: 700; }
+
+        /* Events */
+        .event {
+            font-size: 11px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .event:hover { transform: translateY(-1px); }
+
+        .event.high-risk { background: var(--risk-high-bg); color: var(--risk-high-text); border-left-color: var(--risk-high-text); }
+        .event.medium-risk { background: var(--risk-med-bg); color: var(--risk-med-text); border-left-color: var(--risk-med-text); }
+        .event.low-risk { background: var(--risk-low-bg); color: var(--risk-low-text); border-left-color: var(--risk-low-text); }
+
+        .event .time { font-weight: 700; margin-right: 4px; opacity: 0.8; }
+        .event-more { font-size: 10px; color: var(--text-muted); padding-left: 8px; font-weight: 500; }
+
+        /* --- PORTFOLIO SECTION --- */
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px; }
+        .kpi-card { background: white; padding: 20px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 2px 10px rgba(0,0,0,0.02); }
+        .kpi-label { font-size: 13px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+        .kpi-value { font-family: var(--font-serif); font-size: 32px; color: var(--text-main); margin: 8px 0; }
+        .kpi-value.critical { color: var(--risk-high-text); }
+        .kpi-trend { font-size: 12px; font-weight: 500; }
+        .kpi-trend.positive { color: var(--risk-low-text); }
+        .kpi-trend.negative { color: var(--risk-high-text); }
+        .kpi-trend.neutral { color: var(--text-muted); }
+
+        .chart-controls { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; }
+        .chart-legend { display: flex; gap: 16px; }
+        .legend-item { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; font-weight: 500; }
+
+        .filter-btn { background: white; border: 1px solid var(--border-light); padding: 8px 16px; border-radius: var(--radius-pill); cursor: pointer; color: var(--text-main); font-size: 13px; margin-left: 8px; }
+        .filter-btn.active { background: var(--primary-black); color: white; border-color: var(--primary-black); }
+
+        /* --- VISUALIZATION CONTAINER --- */
+        .chart-container {
+            position: relative;
+            height: 500px;
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        /* --- CUSTOM CHART TOOLTIP --- */
+        .custom-chart-tooltip {
+            opacity: 0;
+            position: absolute;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 16px;
+            pointer-events: none;
+            transform: translate(-50%, -110%);
+            width: 280px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            z-index: 100;
+            font-family: var(--font-sans);
+            transition: opacity 0.2s ease;
+        }
+
+        .tooltip-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .tooltip-header h4 {
+            font-family: var(--font-serif);
+            font-size: 16px;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.2;
+            max-width: 65%;
+        }
+
+        .risk-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .risk-badge.critical, .risk-badge.high { background: var(--risk-high-bg); color: var(--risk-high-text); }
+        .risk-badge.medium { background: var(--risk-med-bg); color: var(--risk-med-text); }
+        .risk-badge.low { background: var(--risk-low-bg); color: var(--risk-low-text); }
+
+        .tt-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; color: var(--text-muted); }
+        .tt-row strong { color: var(--text-main); }
+        .tt-desc { font-size: 12px; color: var(--text-muted); background: #f8fafc; padding: 8px; border-radius: 6px; margin-top: 10px; font-style: italic; line-height: 1.4; border: 1px solid rgba(0,0,0,0.03); }
+
+        .tooltip-footer { margin-top: 8px; text-align: right; }
+        .click-hint { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary-green); font-weight: 600; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">Overide</div>
+        <div class="nav-links">
+            <a href="#" class="active">Control Center</a>
+            <a href="#">Library</a>
+            <a href="#">Settings</a>
+        </div>
+        <div class="user-profile">
+            <div class="avatar">R</div>
+        </div>
+    </nav>
+
+    <main class="container">
+        
+        <!-- Page Title -->
+        <header class="page-header">
+            <div>
+                <h1 class="serif-title">Contract Control Center</h1>
+                <p class="subtitle">Monitor renewals, obligations, and global risk.</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn-secondary"><i class="ph ph-bell"></i> Alerts (3)</button>
+                <button class="btn-primary"><i class="ph ph-plus"></i> Add Event</button>
+            </div>
+        </header>
+
+        <!-- SECTION 1: CALENDAR -->
+        <section class="calendar-section glass-panel">
+            <div class="calendar-header">
+                <div class="cal-controls">
+                    <h2 class="month-title">October 2025</h2>
+                    <div class="nav-arrows">
+                        <button class="icon-btn"><i class="ph ph-caret-left"></i></button>
+                        <button class="icon-btn"><i class="ph ph-caret-right"></i></button>
+                    </div>
+                </div>
+                
+                <div class="cal-filters">
+                    <div class="toggle-group">
+                        <button class="toggle-btn active">Month</button>
+                        <button class="toggle-btn">Week</button>
+                    </div>
+                    <div class="filter-pill"><span class="dot red"></span> High Risk</div>
+                    <div class="filter-pill"><span class="dot yellow"></span> Medium</div>
+                </div>
+            </div>
+
+            <!-- Calendar Grid -->
+            <div class="calendar-grid">
+                <!-- Days of Week -->
+                <div class="day-name">Sun</div>
+                <div class="day-name">Mon</div>
+                <div class="day-name">Tue</div>
+                <div class="day-name">Wed</div>
+                <div class="day-name">Thu</div>
+                <div class="day-name">Fri</div>
+                <div class="day-name">Sat</div>
+
+                <!-- Days -->
+                <div class="cal-day faded">28</div>
+                <div class="cal-day faded">29</div>
+                <div class="cal-day faded">30</div>
+                <div class="cal-day"><span class="day-number">1</span></div>
+                
+                <div class="cal-day">
+                    <span class="day-number">2</span>
+                    <div class="event high-risk">
+                        <span class="time">Expiring</span> <span class="title">TechGuard</span>
+                    </div>
+                </div>
+                
+                <div class="cal-day"><span class="day-number">3</span></div>
+                <div class="cal-day"><span class="day-number">4</span></div>
+                <div class="cal-day"><span class="day-number">5</span></div>
+                
+                <div class="cal-day">
+                    <span class="day-number">6</span>
+                    <div class="event medium-risk">
+                        <span class="time">Notice</span> <span class="title">Slack</span>
+                    </div>
+                </div>
+                
+                <div class="cal-day"><span class="day-number">7</span></div>
+                <div class="cal-day"><span class="day-number">8</span></div>
+                
+                <div class="cal-day current-day">
+                    <span class="day-number">9</span>
+                    <div class="event low-risk">
+                        <span class="time">Audit</span> <span class="title">GDPR Check</span>
+                    </div>
+                </div>
+                
+                <div class="cal-day"><span class="day-number">10</span></div>
+                <div class="cal-day"><span class="day-number">11</span></div>
+                <div class="cal-day"><span class="day-number">12</span></div>
+                
+                <div class="cal-day">
+                    <span class="day-number">13</span>
+                    <div class="event high-risk">
+                        <span class="time">Auto-Renew</span> <span class="title">Salesforce</span>
+                    </div>
+                    <div class="event-more">+ 2 others</div>
+                </div>
+
+                <div class="cal-day"><span class="day-number">14</span></div>
+                <div class="cal-day"><span class="day-number">15</span></div>
+                <div class="cal-day"><span class="day-number">16</span></div>
+                <div class="cal-day"><span class="day-number">17</span></div>
+                <div class="cal-day"><span class="day-number">18</span></div>
+                <div class="cal-day"><span class="day-number">19</span></div>
+                <div class="cal-day"><span class="day-number">20</span></div>
+                <div class="cal-day"><span class="day-number">21</span></div>
+                <div class="cal-day"><span class="day-number">22</span></div>
+                <div class="cal-day"><span class="day-number">23</span></div>
+                <div class="cal-day"><span class="day-number">24</span></div>
+                <div class="cal-day"><span class="day-number">25</span></div>
+                <div class="cal-day"><span class="day-number">26</span></div>
+                <div class="cal-day"><span class="day-number">27</span></div>
+                <div class="cal-day"><span class="day-number">28</span></div>
+                <div class="cal-day"><span class="day-number">29</span></div>
+                <div class="cal-day"><span class="day-number">30</span></div>
+                <div class="cal-day"><span class="day-number">31</span></div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: PORTFOLIO VISUALIZATION -->
+        <section class="portfolio-section">
+            
+            <!-- KPI Tiles -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Portfolio Value</div>
+                    <div class="kpi-value">$4.2M</div>
+                    <div class="kpi-trend neutral">Across 142 Active Docs</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Critical Priority</div>
+                    <div class="kpi-value critical">5</div>
+                    <div class="kpi-trend negative">High Risk + Expiring &lt; 30d</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Avg Risk Score</div>
+                    <div class="kpi-value">42</div>
+                    <div class="kpi-trend positive">↓ 3 pts from last month</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Renewal Volume</div>
+                    <div class="kpi-value">12</div>
+                    <div class="kpi-trend neutral">Upcoming in Q4</div>
+                </div>
+            </div>
+
+            <!-- Chart Controls -->
+            <div class="chart-controls">
+                <div class="chart-legend">
+                    <span class="legend-item"><span class="dot red"></span> High Risk (>75)</span>
+                    <span class="legend-item"><span class="dot yellow"></span> Medium (50-75)</span>
+                    <span class="legend-item"><span class="dot green"></span> Low (&lt;50)</span>
+                </div>
+                <div class="filter-actions">
+                    <button class="filter-btn active">View: Scatter</button>
+                    <button class="filter-btn">View: List</button>
+                    <button class="filter-btn"><i class="ph ph-export"></i> Export Report</button>
+                </div>
+            </div>
+
+            <!-- Interactive Chart Container -->
+            <div class="chart-container glass-panel">
+                <canvas id="riskPortfolioChart"></canvas>
+                
+                <!-- Custom Tooltip (Hidden by default, populated by JS) -->
+                <div id="chartjs-tooltip" class="custom-chart-tooltip">
+                    <div class="tooltip-header">
+                        <h4 id="tt-title">Contract Name</h4>
+                        <span id="tt-badge" class="risk-badge high">High Risk</span>
+                    </div>
+                    <div class="tooltip-body">
+                        <div class="tt-row">
+                            <span>Counterparty:</span>
+                            <strong id="tt-cp">Vendor Name</strong>
+                        </div>
+                        <div class="tt-row">
+                            <span>Value:</span>
+                            <strong id="tt-val">$0</strong>
+                        </div>
+                        <div class="tt-row">
+                            <span>Renewal:</span>
+                            <strong id="tt-date">Oct 12</strong>
+                        </div>
+                        <div class="tt-desc" id="tt-desc">
+                            Contains uncapped liability clause and missing GDPR addendum.
+                        </div>
+                    </div>
+                    <div class="tooltip-footer">
+                        <span class="click-hint">Click to view analysis</span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- CHART JS CONFIGURATION -->
+    <script>
+        const ctx = document.getElementById('riskPortfolioChart').getContext('2d');
+
+        // MOCK DATA
+        // x: Days to Renewal (Lower = Urgent)
+        // y: Risk Score (Higher = Critical)
+        // r: Bubble size (Value of contract)
+        const contractsData = [
+            { x: 15, y: 92, r: 25, label: "TechGuard MSA", cp: "TechGuard Inc.", val: "$1.2M", date: "Oct 24", risk: "Critical", desc: "Uncapped liability & auto-renew in 15 days." },
+            { x: 120, y: 85, r: 15, label: "CloudFlare DPA", cp: "CloudFlare", val: "$450k", date: "Feb 12", risk: "High", desc: "Missing key GDPR clauses." },
+            { x: 45, y: 65, r: 10, label: "HubSpot Renewal", cp: "HubSpot", val: "$120k", date: "Nov 22", risk: "Medium", desc: "Price increase cap exceeding 5%." },
+            { x: 200, y: 20, r: 30, label: "WeWork Lease", cp: "WeWork", val: "$2.5M", date: "May 2026", risk: "Low", desc: "Standard lease terms, fully compliant." },
+            { x: 10, y: 45, r: 8, label: "Slack Upgrade", cp: "Slack", val: "$40k", date: "Oct 19", risk: "Medium", desc: "Review user seat allocation." },
+            { x: 60, y: 88, r: 18, label: "Consulting Agmt", cp: "McKinsey", val: "$800k", date: "Dec 10", risk: "High", desc: "IP ownership ambiguity detected." },
+            { x: 300, y: 15, r: 12, label: "Cleaning Svcs", cp: "CleanCo", val: "$50k", date: "Aug 2026", risk: "Low", desc: "Low value, standard terms." }
+        ];
+
+        // Colors
+        const getColor = (score) => {
+            if(score >= 75) return 'rgba(185, 28, 28, 0.6)'; // Red
+            if(score >= 50) return 'rgba(180, 83, 9, 0.6)';  // Orange/Yellow
+            return 'rgba(21, 128, 61, 0.6)';                 // Green
+        };
+        const getBorderColor = (score) => {
+            if(score >= 75) return '#b91c1c';
+            if(score >= 50) return '#b45309';
+            return '#15803d';
+        };
+
+        const riskChart = new Chart(ctx, {
+            type: 'bubble',
+            data: {
+                datasets: [{
+                    label: 'Contracts',
+                    data: contractsData,
+                    backgroundColor: contractsData.map(d => getColor(d.y)),
+                    borderColor: contractsData.map(d => getBorderColor(d.y)),
+                    borderWidth: 1.5,
+                    hoverBorderWidth: 2,
+                    hoverBackgroundColor: contractsData.map(d => getColor(d.y).replace('0.6', '0.9')),
+                    hoverRadius: 5 // Expand bubble on hover
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: { display: true, text: 'Days Until Renewal (Urgency)', font: { family: 'Inter', size: 12 }, color: '#64748b' },
+                        reverse: false, 
+                        min: 0,
+                        grid: { color: '#e2e8f0', borderDash: [5, 5] },
+                        ticks: { font: { family: 'Inter' }, color: '#64748b' }
+                    },
+                    y: {
+                        title: { display: true, text: 'Risk Score (0-100)', font: { family: 'Inter', size: 12 }, color: '#64748b' },
+                        min: 0,
+                        max: 100,
+                        grid: { color: '#e2e8f0' },
+                        ticks: { font: { family: 'Inter' }, color: '#64748b' }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }, 
+                    tooltip: {
+                        enabled: false, // Disable default Canvas tooltip
+                        external: function(context) {
+                            // Tooltip Element
+                            const tooltipEl = document.getElementById('chartjs-tooltip');
+
+                            // Hide if no tooltip
+                            const tooltipModel = context.tooltip;
+                            if (tooltipModel.opacity === 0) {
+                                tooltipEl.style.opacity = 0;
+                                return;
+                            }
+
+                            // Set Text Content
+                            if (tooltipModel.body) {
+                                const dataIndex = tooltipModel.dataPoints[0].dataIndex;
+                                const dataItem = contractsData[dataIndex];
+
+                                // Update DOM elements inside tooltip
+                                document.getElementById('tt-title').innerText = dataItem.label;
+                                document.getElementById('tt-cp').innerText = dataItem.cp;
+                                document.getElementById('tt-val').innerText = dataItem.val;
+                                document.getElementById('tt-date').innerText = dataItem.date;
+                                document.getElementById('tt-desc').innerText = dataItem.desc;
+                                
+                                // Update Badge
+                                const badge = document.getElementById('tt-badge');
+                                badge.innerText = dataItem.risk + " Risk";
+                                badge.className = `risk-badge ${dataItem.risk.toLowerCase()}`;
+                            }
+
+                            // Position Tooltip
+                            const position = context.chart.canvas.getBoundingClientRect();
+                            tooltipEl.style.opacity = 1;
+                            tooltipEl.style.left = position.left + window.pageXOffset + tooltipModel.caretX + 'px';
+                            tooltipEl.style.top = position.top + window.pageYOffset + tooltipModel.caretY + 'px';
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>

@@ -246,3 +246,50 @@ class TranslationResponse(BaseModel):
     original_text: str = Field(..., description="Original text")
     target_language: str = Field(..., description="Target language")
 
+class TrelloSyncRequest(BaseModel):
+    review_id: str
+    trello_api_key: str
+    trello_token: str
+    # trello_list_id: str
+    trello_board_id: str
+    filters: List[str] = ["CRITICAL", "MISSING"]
+
+class ClauseComparison(BaseModel):
+    """Single clause comparison for refinement."""
+    change_id: str = Field(..., description="Unique ID for this change")
+    category: str = Field(..., description="CRITICAL/MISSING/NEGOTIABLE")
+    original_clause: Optional[str] = Field(None, description="Original contract text (null for missing clauses)")
+    improved_clause: str = Field(..., description="Suggested improvement")
+    reasoning: str = Field(..., description="Why this change is recommended")
+    affected_issue: Optional[str] = Field(None, description="Related review point advice")
+
+
+class RefinementPreviewResponse(BaseModel):
+    """Preview of all suggested refinement changes."""
+    review_id: str
+    total_changes: int
+    changes: List[ClauseComparison]
+    summary: str = Field(..., description="Overall summary of changes")
+    mode: str = Field(..., description="Refinement mode used")
+
+
+class ClauseFeedback(BaseModel):
+    """User feedback on a single clause."""
+    change_id: str
+    action: str = Field(..., description="'accept' or 'ignore'")
+
+
+class RefinementFeedbackRequest(BaseModel):
+    """User feedback on all clauses."""
+    feedback: List[ClauseFeedback]
+    refinement_mode: str = Field(default="balanced", description="balanced or unilateral")
+
+
+class CustomRefinedContractResponse(BaseModel):
+    """Refined contract with only accepted changes."""
+    review_id: str
+    accepted_changes: int
+    ignored_changes: int
+    refined_contract: str
+    pdf_url: Optional[str] = None
+
