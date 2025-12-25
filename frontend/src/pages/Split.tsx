@@ -13,7 +13,9 @@ import {
     Share2,
     ThumbsUp,
     ThumbsDown,
-    Globe
+    Globe,
+    Lightbulb
+
 
 } from 'lucide-react';
 import api from '../services/api';
@@ -24,6 +26,23 @@ interface Step {
     status: 'complete' | 'active' | 'pending';
     detail?: string;
 }
+
+interface ChatMessage {
+    role: 'user' | 'assistant';
+    content: string;
+    quotes?: Array<{ text: string; confidence: number }>;
+    suggestions?: string[];
+    searchResults?: Array<{ title: string; link: string; snippet: string; source: string; date?: string }>;
+}
+
+const SUGGESTED_BACKUPS = [
+    "Explain this legal term in simple English",
+    "Find latest past cases related to this",
+    "Fetch latest news on this topic",
+    "What are the risks here?",
+    "Suggest a redline for this",
+    "Is this standard market practice?"
+];
 
 function Split() {
     const location = useLocation();
@@ -60,6 +79,20 @@ function Split() {
     const [translation, setTranslation] = useState<{ text: string; lang: string } | null>(null);
     const [translating, setTranslating] = useState(false);
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
+
+    // Chat State
+    const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+    const [chatInput, setChatInput] = useState('');
+    const [isChatLoading, setIsChatLoading] = useState(false);
+    const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [chatMessages, isChatLoading]);
 
 
     // Feedback State
@@ -159,6 +192,65 @@ function Split() {
             // Optional: Show error toast
         } finally {
             setTranslating(false);
+        }
+    };
+
+    const handleSendMessage = async (text?: string) => {
+        const messageText = text || chatInput;
+        if (!messageText.trim()) return;
+
+        // Optimistic update
+        setChatMessages(prev => [...prev, { role: 'user', content: messageText }]);
+        setChatInput('');
+        setIsChatLoading(true);
+
+        try {
+            if (messageText === "Fetch latest news on this topic" || messageText === "Find latest past cases related to this") {
+                const query = messageText === "Fetch latest news on this topic" ? "latest law news" : "latest law cases";
+                const response = await api.post('/api/search', {
+                    query: query
+                });
+
+                if (response.data.organic) {
+                    setChatMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: `Here are the latest ${messageText.includes("news") ? "news" : "cases"} I found:`,
+                        searchResults: response.data.organic,
+                        suggestions: SUGGESTED_BACKUPS.slice(0, 3)
+                    }]);
+                } else {
+                    setChatMessages(prev => [...prev, {
+                        role: 'assistant',
+                        content: "I couldn't find any relevant results at the moment.",
+                        suggestions: SUGGESTED_BACKUPS.slice(0, 3)
+                    }]);
+                }
+            } else {
+                if (!currentReviewId) throw new Error("No review ID");
+
+                const response = await api.post(`/api/reviews/${currentReviewId}/ask`, {
+                    question: messageText
+                });
+
+                // Select 3 random suggestions
+                const shuffled = [...SUGGESTED_BACKUPS].sort(() => 0.5 - Math.random());
+                const selectedSuggestions = shuffled.slice(0, 3);
+
+                setChatMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: response.data.answer,
+                    quotes: response.data.supporting_quotes,
+                    suggestions: selectedSuggestions
+                }]);
+            }
+        } catch (err: any) {
+            console.error('Chat/Search failed:', err);
+            setChatMessages(prev => [...prev, {
+                role: 'assistant',
+                content: "I'm sorry, I couldn't process that request. Please try again."
+            }]);
+        } finally {
+            setIsChatLoading(false);
         }
     };
 
@@ -872,45 +964,101 @@ function Split() {
 
                                 {/* Messages Area */}
                                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                                    {/* AI Message */}
-                                    <div className="flex justify-start">
-                                        <div className="bg-white rounded-2xl rounded-tl-sm p-5 shadow-sm border border-gray-100 max-w-[90%]">
-                                            <p className="text-sm text-gray-800 leading-relaxed">
-                                                I've analyzed the <span className="font-semibold text-black">Liability Agreement</span>. There are 11 critical risks, mostly concerning California Labor Code violations. How would you like to proceed?
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* User Message */}
-                                    <div className="flex justify-end">
-                                        <div className="bg-[#0f172a] text-white rounded-2xl rounded-tr-sm p-4 shadow-md max-w-[90%]">
-                                            <p className="text-sm leading-relaxed">
-                                                Draft a counter-clause for section 3.1 regarding the personal liability cap.
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* AI Message with Code/Quote */}
-                                    <div className="flex justify-start">
-                                        <div className="bg-white rounded-2xl rounded-tl-sm p-5 shadow-sm border border-gray-100 max-w-[90%]">
-                                            <p className="text-sm text-gray-800 mb-4">
-                                                Here is a suggested redline that limits liability to cases of proven fraud, excluding gross negligence:
-                                            </p>
-                                            <div className="bg-[#f1f5f9] rounded-lg p-4 border-l-4 border-[#166534] font-mono text-xs text-gray-700 leading-relaxed">
-                                                "3.1. Liability shall be limited to instances of proven willful misconduct or fraud. Gross negligence shall not constitute grounds for personal financial recovery..."
-                                            </div>
-                                            <div className="flex gap-2 mt-4">
-                                                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                                                    <div className="w-3.5 h-3.5"><Copy className="w-full h-full" /></div>
-                                                    Copy
-                                                </button>
-                                                <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
-                                                    <div className="w-3.5 h-3.5"><CornerDownLeft className="w-full h-full" /></div>
-                                                    Insert to Doc
-                                                </button>
+                                    {chatMessages.length === 0 && (
+                                        <div className="flex justify-start">
+                                            <div className="bg-white rounded-2xl rounded-tl-sm p-5 shadow-sm border border-gray-100 max-w-[90%]">
+                                                <p className="text-sm text-gray-800 leading-relaxed">
+                                                    I've analyzed the <span className="font-semibold text-black">{reviewData?.contract_type || 'contract'}</span>.
+                                                    {reviewData?.critical_points?.length > 0
+                                                        ? ` There are ${reviewData.critical_points.length} critical risks.`
+                                                        : ' The contract looks mostly safe.'}
+                                                    How would you like to proceed?
+                                                </p>
                                             </div>
                                         </div>
-                                    </div>
+                                    )}
+
+                                    {chatMessages.map((msg, idx) => (
+                                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`${msg.role === 'user'
+                                                ? 'bg-[#0f172a] text-white rounded-tr-sm'
+                                                : 'bg-white text-gray-800 border border-gray-100 rounded-tl-sm'
+                                                } rounded-2xl p-4 shadow-sm max-w-[90%]`}>
+
+                                                <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+
+                                                {/* Search Results */}
+                                                {msg.role === 'assistant' && msg.searchResults && (
+                                                    <div className="mt-4 space-y-3">
+                                                        {msg.searchResults.map((result, rIdx) => (
+                                                            <a
+                                                                key={rIdx}
+                                                                href={result.link}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="block bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl p-3 transition-all group"
+                                                            >
+                                                                <div className="flex items-start justify-between gap-2">
+                                                                    <h4 className="text-sm font-semibold text-blue-700 leading-snug group-hover:underline">
+                                                                        {result.title}
+                                                                    </h4>
+                                                                    <CornerDownLeft className="w-3 h-3 text-gray-400 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                                </div>
+                                                                <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                                                    {result.snippet}
+                                                                </p>
+                                                                {result.date && (
+                                                                    <span className="text-[10px] text-gray-400 mt-2 block">
+                                                                        {result.date} • {result.source}
+                                                                    </span>
+                                                                )}
+                                                            </a>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Quotes for assistant messages */}
+                                                {msg.role === 'assistant' && msg.quotes && msg.quotes.length > 0 && (
+                                                    <div className="mt-3 space-y-2">
+                                                        {msg.quotes.map((quote, qIdx) => (
+                                                            <div key={qIdx} className="bg-[#f1f5f9] rounded-lg p-3 border-l-4 border-[#166534] font-mono text-xs text-gray-700 leading-relaxed">
+                                                                "{quote.text}"
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Suggestions */}
+                                                {msg.role === 'assistant' && msg.suggestions && msg.suggestions.length > 0 && (
+                                                    <div className="mt-4 flex flex-wrap gap-2">
+                                                        {msg.suggestions.map((suggestion, sIdx) => (
+                                                            <button
+                                                                key={sIdx}
+                                                                onClick={() => handleSendMessage(suggestion)}
+                                                                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-full text-xs text-gray-600 transition-colors"
+                                                            >
+                                                                <Lightbulb className="w-3 h-3 text-amber-500" />
+                                                                {suggestion}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+
+                                    {isChatLoading && (
+                                        <div className="flex justify-start">
+                                            <div className="bg-white rounded-2xl rounded-tl-sm p-4 shadow-sm border border-gray-100">
+                                                <div className="flex gap-1">
+                                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-75"></div>
+                                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div ref={messagesEndRef} />
                                 </div>
 
                                 {/* Input Area */}
@@ -918,19 +1066,37 @@ function Split() {
                                     <div className="relative">
                                         <input
                                             type="text"
-                                            placeholder="Ask Overide to refine or explain..."
+                                            value={chatInput}
+                                            onChange={(e) => setChatInput(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                            disabled={isChatLoading}
+                                            placeholder="Ask Overrule to refine or explain..."
                                             className="w-full bg-white border border-gray-200 rounded-full pl-6 pr-14 py-4 text-sm focus:outline-none focus:border-[#166534] focus:ring-1 focus:ring-[#166534] shadow-sm transition-all"
                                         />
-                                        <button className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#166534] hover:bg-[#14532d] rounded-full flex items-center justify-center text-white transition-colors shadow-md">
+                                        <button
+                                            onClick={() => handleSendMessage()}
+                                            disabled={isChatLoading || !chatInput.trim()}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-[#166534] hover:bg-[#14532d] disabled:bg-gray-300 rounded-full flex items-center justify-center text-white transition-colors shadow-md"
+                                        >
                                             <span className="sr-only">Send</span>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
+                                            {isChatLoading ? (
+                                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
+                                            )}
                                         </button>
                                     </div>
                                     <div className="flex justify-center gap-3 mt-4">
-                                        <button className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                                        <button
+                                            onClick={() => handleSendMessage("Suggest redlines for critical issues")}
+                                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                                        >
                                             Suggest Redlines
                                         </button>
-                                        <button className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium">
+                                        <button
+                                            onClick={() => handleSendMessage("Explain the risks in this contract")}
+                                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
+                                        >
                                             Explain Risks
                                         </button>
                                     </div>

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     google_api_key: str  # For Gemini (Referee)
     groq_api_key: Optional[str] = None  # Groq (fast inference)
     mistral_api_key: Optional[str] = None  # Mistral AI
+    serper_api_key: Optional[str] = None # Serper Google Search
     
     # Vector Database (Pinecone)
     pinecone_api_key: str

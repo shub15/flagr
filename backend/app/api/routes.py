@@ -38,6 +38,9 @@ from app.services.image_processor import image_processor
 from app.services.export_service import export_service
 from app.vectordb.client import pinecone_client
 from app import __version__
+import os
+import http.client
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -601,6 +604,39 @@ async def ask_contract_question(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to answer question: {str(e)}"
         )
+
+
+from app.config import settings
+
+@router.post("/search")
+async def search_google(
+    query: dict,
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Search Google using Serper API.
+    """
+    try:
+        search_query = query.get("query")
+        if not search_query:
+             raise HTTPException(status_code=400, detail="Query is required")
+
+        conn = http.client.HTTPSConnection("google.serper.dev")
+        payload = json.dumps({
+          "q": search_query
+        })
+        headers = {
+          'X-API-KEY': settings.serper_api_key,
+          'Content-Type': 'application/json'
+        }
+        conn.request("POST", "/search", payload, headers)
+        res = conn.getresponse()
+        data = res.read()
+        return json.loads(data.decode("utf-8"))
+    except Exception as e:
+        logger.error(f"Search failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 @router.get("/reviews/{review_id}/council", response_model=CouncilTransparencyResponse)
