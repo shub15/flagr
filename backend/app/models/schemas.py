@@ -81,6 +81,7 @@ class ContractReviewResult(BaseModel):
         None,
         description="Statistics about PDF annotations (highlights added, points found, etc.)"
     )
+    llm_transparency: Optional[Dict[str, List[Dict]]] = None
     
     class Config:
         json_schema_extra = {
@@ -178,6 +179,56 @@ class ContractAnswerResponse(BaseModel):
                 ],
                 "confidence": 0.95,
                 "answerable": True
+            }
+        }
+
+
+class LLMResponse(BaseModel):
+    """Individual LLM response from council."""
+    provider: str = Field(..., description="LLM provider (openai/groq/mistral)")
+    model: str = Field(..., description="Model name")
+    raw_response: str = Field(..., description="Full LLM output")
+    findings: List[dict] = Field(default_factory=list, description="Raw findings as dicts")
+    confidence: float = Field(..., description="Response confidence")
+    response_time_ms: int = Field(..., description="Response time in milliseconds")
+
+
+class AgentCouncilResponse(BaseModel):
+    """Council responses for a single agent."""
+    agent_name: str = Field(..., description="Agent name (skeptic/strategist/auditor)")
+    llm_responses: List[LLMResponse] = Field(..., description="Individual LLM responses")
+    summary: str = Field(..., description="Summary of council's consensus")
+    total_findings: int = Field(..., description="Total findings before deduplication")
+    final_findings: int = Field(..., description="Findings after deduplication")
+
+
+class CouncilTransparencyResponse(BaseModel):
+    """Complete transparency view of all council responses."""
+    review_id: str
+    agents: List[AgentCouncilResponse] = Field(..., description="All agent councils")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "review_id": "rev_abc123",
+                "agents": [
+                    {
+                        "agent_name": "skeptic",
+                        "llm_responses": [
+                            {
+                                "provider": "groq",
+                                "model": "llama-3.1-70b-versatile",
+                                "raw_response": "[{...}]",
+                                "findings": [],
+                                "confidence": 0.95,
+                                "response_time_ms": 1234
+                            }
+                        ],
+                        "summary": "3 LLMs responded. llama-3.1-70b: 4 findings. gpt-4: 5 findings.",
+                        "total_findings": 12,
+                        "final_findings": 6
+                    }
+                ]
             }
         }
 

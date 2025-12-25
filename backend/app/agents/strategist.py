@@ -111,7 +111,7 @@ Output ONLY the JSON array. No other text."""
         contract_text: str, 
         contract_type: str = "employment",
         context: Optional[str] = None
-    ) -> List[ReviewPoint]:
+    ) -> tuple[List[ReviewPoint], List[dict]]:
         """Analyze contract using council of LLMs."""
         logger.info(
             f"Strategist analyzing {contract_type} contract "
@@ -137,11 +137,22 @@ Output ONLY the JSON array. No other text."""
             agent_source=self.agent_name
         )
         
+        # Format raw responses
+        raw_responses = []
+        for resp in llm_responses:
+            if resp.get("success"):
+                raw_responses.append({
+                    "provider": resp.get("provider", "unknown"),
+                    "model": resp.get("model", "unknown"),
+                    "raw_response": resp.get("content", ""),
+                    "response_time_ms": resp.get("response_time_ms", 0)
+                })
+        
         logger.info(
             f"Strategist found {len(consensus_points)} "
-            f"missing/negotiable points via council consensus"
+            f"missing/negotiable points via council consensus ({len(raw_responses)} LLM responses)"
         )
-        return consensus_points
+        return consensus_points, raw_responses
 
 
 # Global instance

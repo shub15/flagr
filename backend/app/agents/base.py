@@ -19,9 +19,9 @@ class BaseAgent(ABC):
         contract_text: str, 
         contract_type: str = "employment",
         context: Optional[str] = None
-    ) -> List[ReviewPoint]:
+    ) -> tuple[List[ReviewPoint], List[dict]]:
         """
-        Analyze contract and return findings.
+        Analyze contract and return findings + raw LLM responses.
         
         Args:
             contract_text: Full contract text
@@ -29,7 +29,9 @@ class BaseAgent(ABC):
             context: Optional additional context about the contract
         
         Returns:
-            List of ReviewPoint objects
+            Tuple of (consensus_findings, raw_llm_responses)
+            - consensus_findings: List of ReviewPoint objects after deduplication
+            - raw_llm_responses: List of dicts with provider, model, raw_response, etc.
         """
         pass
     

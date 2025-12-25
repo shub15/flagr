@@ -80,7 +80,7 @@ Remember: Output ONLY the JSON array of critical findings. No other text."""
         contract_text: str, 
         contract_type: str = "employment",
         context: Optional[str] = None
-    ) -> List[ReviewPoint]:
+    ) -> tuple[List[ReviewPoint], List[dict]]:
         """Analyze contract using council of LLMs."""
         logger.info(
             f"Skeptic analyzing {contract_type} contract "
@@ -106,8 +106,22 @@ Remember: Output ONLY the JSON array of critical findings. No other text."""
             agent_source=self.agent_name
         )
         
-        logger.info(f"Skeptic found {len(consensus_points)} critical risks via council consensus")
-        return consensus_points
+        # Format raw responses for database storage
+        raw_responses = []
+        for resp in llm_responses:
+            if resp.get("success"):
+                raw_responses.append({
+                    "provider": resp.get("provider", "unknown"),
+                    "model": resp.get("model", "unknown"),
+                    "raw_response": resp.get("content", ""),
+                    "response_time_ms": resp.get("response_time_ms", 0)
+                })
+        
+        logger.info(
+            f"Skeptic found {len(consensus_points)} critical risks via council consensus "
+            f"({len(raw_responses)} LLM responses)"
+        )
+        return consensus_points, raw_responses
 
 
 # Global instance

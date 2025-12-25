@@ -46,6 +46,7 @@ class ContractReview(Base):
     user = relationship("User", back_populates="reviews")
     review_points = relationship("ReviewPointDB", back_populates="review", cascade="all, delete-orphan")
     feedbacks = relationship("UserFeedback", back_populates="review", cascade="all, delete-orphan")
+    llm_responses = relationship("AgentLLMResponse", back_populates="review", cascade="all, delete-orphan")
 
 
 class ReviewPointDB(Base):
@@ -84,3 +85,22 @@ class UserFeedback(Base):
     
     # For RLHF analysis: track which advice gets accepted/dismissed
     # Example query: SELECT advice, COUNT(*) FROM user_feedback WHERE action='accepted' GROUP BY advice
+
+
+class AgentLLMResponse(Base):
+    """Individual LLM response from council for transparency."""
+    __tablename__ = "agent_llm_responses"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    review_id = Column(Integer, ForeignKey("contract_reviews.id"), nullable=False)
+    agent_name = Column(String(50), nullable=False)  # skeptic, strategist, auditor
+    llm_provider = Column(String(50), nullable=False)  # openai, groq, mistral  
+    llm_model = Column(String(100), nullable=False)  # gpt-4, llama-3.1-70b, etc
+    raw_response = Column(Text, nullable=False)  # Full LLM JSON output
+    parsed_findings = Column(Text, nullable=True)  # JSON array of findings
+    confidence = Column(Float, default=1.0)
+    response_time_ms = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationship
+    review = relationship("ContractReview", back_populates="llm_responses")

@@ -67,11 +67,16 @@ class ContractOrchestrator:
         
         try:
             # Execute all agents in parallel
-            # Each agent internally runs its LLM council in parallel
-            skeptic_points, strategist_points, auditor_points = await asyncio.gather(
+            # Each agent returns (consensus_points, raw_llm_responses)
+            results = await asyncio.gather(
                 *agent_tasks,
                 return_exceptions=False
             )
+            
+            # Unpack results
+            skeptic_points, skeptic_llm_responses = results[0]
+            strategist_points, strategist_llm_responses = results[1]
+            auditor_points, auditor_llm_responses = results[2]
             
             logger.info(
                 f"Agent results: "
@@ -92,6 +97,13 @@ class ContractOrchestrator:
             strategist_points=strategist_points,
             auditor_points=auditor_points
         )
+        
+        # Attach LLM transparency data to result
+        result.llm_transparency = {
+            "skeptic": skeptic_llm_responses,
+            "strategist": strategist_llm_responses,
+            "auditor": auditor_llm_responses
+        }
         
         logger.info(
             f"Contract review completed: "
