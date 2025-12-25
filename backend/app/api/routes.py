@@ -23,7 +23,9 @@ from app.models.schemas import (
     AgentCouncilResponse,
     LLMResponse,
     ReviewPoint,
-    ReviewCategory
+    ReviewCategory,
+    TranslationRequest,
+    TranslationResponse
 )
 from app.models.database import ContractReview, ReviewPointDB, UserFeedback, ReviewCategoryDB, AgentLLMResponse
 from app.models.user import User
