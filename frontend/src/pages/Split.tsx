@@ -183,6 +183,8 @@ function Split() {
 
     // Review data from API
     const [reviewData, setReviewData] = useState<any>(null);
+    const [councilData, setCouncilData] = useState<AgentCouncilResponse[] | null>(null);
+    const [isCouncilLoading, setIsCouncilLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'critical' | 'good' | 'missing' | 'negotiable'>('critical');
 
     const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'chat' | 'refine'>('analysis');
@@ -305,7 +307,7 @@ function Split() {
         setIsDownloading(true);
         try {
             // First apply feedback/refinements
-            await api.post(`/api/reviews/${currentReviewId}/refine-with-feedback`);
+            await api.post(`/api/reviews/${currentReviewId}/refine-with-feedback`, { "refinement_mode": "balanced" });
 
             // Then download the PDF
             window.open(`${config.apiBaseUrl}/api/reviews/${currentReviewId}/custom-refined-pdf`, '_blank');
@@ -578,31 +580,27 @@ function Split() {
         makeApiCall();
     }, [reviewId, file, purpose, context, steps.length]);
 
-    const fetchCouncilData = async (id: string) => {
-        try {
+    // Fetch Council Data
+    useEffect(() => {
+        const fetchCouncilData = async () => {
+            if (!reviewId) return;
+            // Avoid refetching if already loaded for same ID? Or just always fetch.
+            // A simple check could be if councilData is null or we want fresh data.
             setIsCouncilLoading(true);
-            const response = await api.get(`/api/reviews/${id}/council`);
-            setCouncilData(response.data);
-        } catch (err) {
-            console.error("Failed to fetch council data:", err);
-        } finally {
-            setIsCouncilLoading(false);
-        }
-    };
+            try {
+                const response = await api.get(`/api/reviews/${reviewId}/council`);
+                if (response.data && response.data.agents) {
+                    setCouncilData(response.data.agents);
+                }
+            } catch (err) {
+                console.error("Error fetching council data:", err);
+            } finally {
+                setIsCouncilLoading(false);
+            }
+        };
 
-    // Initial load for existing review
-    useEffect(() => {
-        if (reviewId) {
-            fetchCouncilData(reviewId);
-        }
+        fetchCouncilData();
     }, [reviewId]);
-
-    // Fetch council data when new review is generated
-    useEffect(() => {
-        if (reviewData?.review_id) {
-            fetchCouncilData(reviewData.review_id);
-        }
-    }, [reviewData?.review_id]);
 
     // Handle step-by-step animation with delays
     useEffect(() => {
@@ -1004,7 +1002,7 @@ function Split() {
 
                                         {/* Translated Summary */}
                                         {translating && (
-                                            <div className="text-sm text-gray-400 font-light italic mb-6 animate-pulse">
+                                            <div className="text-sm text-gray-400 font-light italic mb-6 animate-text-fade">
                                                 Translating...
                                             </div>
                                         )}
@@ -1222,56 +1220,85 @@ function Split() {
                                         Council Opinions
                                     </div>
 
-                                    {/* Agent 2: Finance */}
                                     {isCouncilLoading ? (
-                                        <div className="text-center py-4 text-xs text-gray-400">Loading council insights...</div>
-                                    ) : (
-                                        councilData?.agents.map((agent, agentIdx) => {
-                                            const style = getAgentStyle(agent.agent_name);
-                                            return (
-                                                <details key={agentIdx} className={`group ${style.colors.bg} border ${style.colors.border} rounded-xl`} open={agentIdx === 0}>
-                                                    <summary className="flex items-center justify-between p-4 cursor-pointer list-none rounded-xl transition-colors">
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`w-6 h-6 rounded-full ${style.colors.iconBg} flex items-center justify-center border ${style.colors.border}`}>
-                                                                {style.icon}
-                                                            </div>
-                                                            <span className={`text-xs font-semibold ${style.colors.text}`}>{style.label}</span>
-                                                        </div>
-                                                        <Plus className={`w-3 h-3 ${style.colors.iconColor} group-open:rotate-45 transition-transform`} />
-                                                    </summary>
-                                                    <div className="px-4 pb-4 pt-0">
-                                                        <p className={`text-[11px] ${style.colors.text} leading-relaxed pl-9 whitespace-pre-wrap`}>
-                                                            {agent.summary || "No specific summary provided."}
-                                                        </p>
-                                                        {agent.final_findings > 0 && (
-                                                            <div className="pl-9 mt-2 hidden group-open:block">
-                                                                <div className="text-[10px] opacity-70 mb-1 font-semibold uppercase">Findings count: {agent.final_findings}</div>
-                                                            </div>
-                                                        )}
+                                        <div className="space-y-3">
+                                            <div className="h-12 bg-gray-50 rounded-xl animate-pulse"></div>
+                                            <div className="h-12 bg-gray-50 rounded-xl animate-pulse"></div>
+                                        </div>
+                                    ) : (councilData || []).map((agent, agentIdx) => {
+                                        // Determine styling based on agent name/role
+                                        let icon = <ShieldAlert className="w-3 h-3 text-gray-600" />;
+                                        let bg = "bg-gray-50";
+                                        let border = "border-gray-100";
+                                        let iconBg = "bg-white";
+                                        let textColor = "text-gray-800";
+                                        let subTextColor = "text-gray-600";
 
-                                                        {/* Raw Responses */}
-                                                        <div className="pl-9 mt-4 space-y-4 hidden group-open:block">
-                                                            {agent.llm_responses?.map((resp, idx) => (
-                                                                <div key={idx} className="border-t border-black/5 pt-3">
-                                                                    <div className="flex items-center gap-2 mb-2">
-                                                                        <span className="text-[10px] font-bold uppercase tracking-wider opacity-60">{resp.model}</span>
-                                                                        <span className="text-[9px] bg-black/5 px-1.5 py-0.5 rounded text-gray-500">{resp.provider}</span>
-                                                                        <span className="text-[9px] text-gray-400">{resp.response_time_ms}ms</span>
-                                                                    </div>
-                                                                    <pre className="text-[10px] font-mono bg-white/50 p-3 rounded-lg border border-black/5 overflow-x-auto whitespace-pre-wrap text-gray-600">
-                                                                        {resp.raw_response}
-                                                                    </pre>
-                                                                </div>
-                                                            ))}
+                                        // Simple mapping based on known agent types
+                                        const nameLower = agent.agent_name.toLowerCase();
+                                        if (nameLower.includes('risk') || nameLower.includes('skeptic')) {
+                                            icon = <ShieldAlert className="w-3 h-3 text-[#BE123C]" />;
+                                            bg = "bg-[#FFF1F2]";
+                                            border = "border-[#FECDD3]";
+                                            iconBg = "bg-white";
+                                            textColor = "text-[#881337]";
+                                            subTextColor = "text-[#9F1239]";
+                                        } else if (nameLower.includes('finance') || nameLower.includes('auditor')) {
+                                            icon = <Coins className="w-3 h-3 text-[#15803D]" />;
+                                            bg = "bg-[#F0FDF4]";
+                                            border = "border-[#BBF7D0]";
+                                            iconBg = "bg-white";
+                                            textColor = "text-[#14532D]";
+                                            subTextColor = "text-[#15803D]";
+                                        } else if (nameLower.includes('legal') || nameLower.includes('strategist')) {
+                                            icon = <Sparkles className="w-3 h-3 text-[#1D4ED8]" />; // Using Sparkles as generic/legal placeholder
+                                            bg = "bg-[#EFF6FF]";
+                                            border = "border-[#BFDBFE]";
+                                            iconBg = "bg-white";
+                                            textColor = "text-[#1E3A8A]";
+                                            subTextColor = "text-[#1E40AF]";
+                                        }
+
+                                        // Get specific summary from the agent data
+                                        // Simplification: Show agent_name and raw_response
+                                        const firstResponse = agent.llm_responses?.[0];
+                                        let rawResponse = firstResponse?.raw_response || "No response found.";
+
+                                        // Attempt to parse JSON if it looks like one (stripping markdown)
+                                        try {
+                                            const cleanedResponse = rawResponse.replace(/```json\n|\n```|```/g, '');
+                                            if (cleanedResponse.trim().startsWith('[') || cleanedResponse.trim().startsWith('{')) {
+                                                const parsed = JSON.parse(cleanedResponse);
+                                                rawResponse = JSON.stringify(parsed, null, 2);
+                                            }
+                                        } catch (e) {
+                                            // Fallback to original string if parse fails
+                                        }
+
+                                        return (
+                                            <details key={agentIdx} className={`group ${bg} border ${border} rounded-xl`}>
+                                                <summary className="flex items-center justify-between p-4 cursor-pointer list-none rounded-xl transition-colors">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-6 h-6 rounded-full ${iconBg} flex items-center justify-center border ${border}`}>
+                                                            {icon}
                                                         </div>
+                                                        <span className={`text-xs font-semibold ${textColor} capitalize`}>Agent {agent.agent_name}</span>
                                                     </div>
-                                                </details>
-                                            );
-                                        })
-                                    )}
-                                    {/* Fallback if no data and not loading */}
-                                    {!isCouncilLoading && !councilData && (
-                                        <div className="text-center py-4 text-xs text-gray-400">No council data available.</div>
+                                                    <Plus className={`w-3 h-3 ${subTextColor} group-open:rotate-45 transition-transform`} />
+                                                </summary>
+                                                <div className="px-4 pb-4 pt-0">
+                                                    <pre className={`text-[10px] ${subTextColor} leading-relaxed pl-9 whitespace-pre-wrap font-mono overflow-x-auto`}>
+                                                        {rawResponse}
+                                                    </pre>
+                                                </div>
+                                            </details>
+                                        );
+                                    })}
+
+                                    {(!councilData || councilData.length === 0) && !isCouncilLoading && (
+                                        <div className="text-center py-4 text-gray-400 text-xs italic">
+                                            No council opinions available.
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -1499,3 +1526,7 @@ function Split() {
 }
 
 export default Split;
+
+function setApiError(arg0: string) {
+    throw new Error('Function not implemented.');
+}

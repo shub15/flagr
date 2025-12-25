@@ -145,6 +145,23 @@ html {
   animation: slideIn 0.4s ease-out forwards;
 }
 
+/* Simple Fade Animation for Text */
+@keyframes simpleFade {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-text-fade {
+  animation: simpleFade 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Hidden Step Utility */
 .hidden-step {
   display: none;
