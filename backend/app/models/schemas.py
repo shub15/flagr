@@ -136,3 +136,48 @@ class VectorDBStatus(BaseModel):
     total_chunks: int
     embedding_dimension: int
     available: bool
+
+
+class ContractQuestionRequest(BaseModel):
+    """Request to ask a question about a contract."""
+    question: str = Field(
+        ..., 
+        min_length=5, 
+        max_length=500, 
+        description="Question about the contract"
+    )
+
+
+class ContractQuote(BaseModel):
+    """Supporting quote from contract."""
+    text: str = Field(..., description="Relevant excerpt from contract")
+    confidence: float = Field(..., ge=0, le=1, description="Relevance confidence")
+
+
+class ContractAnswerResponse(BaseModel):
+    """Response to contract question."""
+    question: str = Field(..., description="Original question")
+    answer: str = Field(..., description="AI-generated answer")
+    supporting_quotes: List[ContractQuote] = Field(
+        default_factory=list,
+        description="Relevant quotes from contract"
+    )
+    confidence: float = Field(..., ge=0, le=1, description="Answer confidence")
+    answerable: bool = Field(..., description="Whether question can be answered from contract")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "question": "What is the notice period?",
+                "answer": "The notice period is one week for both parties.",
+                "supporting_quotes": [
+                    {
+                        "text": "Internship can be terminated by either parties with at least one week notice.",
+                        "confidence": 0.98
+                    }
+                ],
+                "confidence": 0.95,
+                "answerable": True
+            }
+        }
+
