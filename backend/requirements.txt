@@ -51,3 +51,8 @@ pytest-asyncio==0.23.3
 
 # Redaction packages 
 spacy
+
+# Voice Processing
+SpeechRecognition==3.10.1
+pyttsx3==2.90
+pydub==0.25.1

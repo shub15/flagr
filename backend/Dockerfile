@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     postgresql-client \
+    ffmpeg \
+    espeak \
+    libespeak1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements

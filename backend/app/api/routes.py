@@ -1242,7 +1242,16 @@ async def refine_with_user_feedback(
                 db.add(RefinementFeedback(suggestion_id=s.id, user_id=current_user.id, action=f.action))
     db.commit()
     
-    accepted_ids = [f.change_id for f in request.feedback if f.action == "accept"]
+    # If no feedback provided, accept all suggestions by default
+    if not request.feedback:
+        accepted_ids = [s.change_id for s in suggestions]
+        ignored_ids = []
+        logger.info(f"No feedback provided, accepting all {len(accepted_ids)} changes by default")
+    else:
+        accepted_ids = [f.change_id for f in request.feedback if f.action == "accept"]
+        ignored_ids = [f.change_id for f in request.feedback if f.action == "ignore"]
+        logger.info(f"User accepted {len(accepted_ids)}, ignored {len(ignored_ids)} changes")
+    
     all_comps = [{"change_id": s.change_id, "category": s.category, "original_clause": s.original_clause, "improved_clause": s.improved_clause, "reasoning": s.reasoning, "affected_issue": s.affected_issue} for s in suggestions]
     
     from app.services.contract_refinement import contract_refinement_service

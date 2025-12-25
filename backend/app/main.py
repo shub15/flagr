@@ -69,6 +69,9 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(router)
 
+from app.api.voice_routes import router as voice_router
+app.include_router(voice_router, prefix="/api")
+
 
 @app.get("/")
 async def root():

@@ -1,0 +1,318 @@
+/* --- VARIABLES --- */
+:root {
+    --bg-color: #f8fafc;
+    --pdf-bg: #525659;
+    --primary-black: #1a1a1a;
+    --text-muted: #64748b;
+    --white: #ffffff;
+    
+    /* Holographic Colors */
+    --holo-yellow: rgba(243, 228, 149, 0.8);
+    --holo-pink: rgba(241, 152, 148, 0.8);
+    --holo-green: rgba(111, 156, 79, 0.6);
+    --holo-peach: rgba(250, 205, 159, 0.8);
+
+    --font-serif: "Playfair Display", serif;
+    --font-sans: "Inter", sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: var(--bg-color);
+    font-family: var(--font-sans);
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* --- SPLIT LAYOUT --- */
+.split-layout {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* --- LEFT PANEL: PDF --- */
+.pdf-panel {
+    width: 50%;
+    background: var(--pdf-bg);
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid rgba(0,0,0,0.1);
+}
+
+.pdf-toolbar {
+    height: 60px;
+    background: #3e4144;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    color: #e2e8f0;
+    font-size: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+
+.pdf-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: #cbd5e1;
+    font-size: 18px;
+    cursor: pointer;
+}
+.icon-btn:hover { color: white; }
+
+.pdf-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    padding: 40px;
+}
+
+.paper-sheet {
+    width: 100%;
+    max-width: 650px;
+    background: white;
+    min-height: 120%;
+    padding: 60px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    color: var(--primary-black);
+}
+
+.paper-sheet h2 {
+    font-family: var(--font-serif);
+    margin-bottom: 24px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 12px;
+}
+
+.clause {
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    color: #333;
+}
+
+.highlight-box {
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    padding: 12px;
+    font-size: 13px;
+    margin: 16px 0;
+    color: #92400e;
+}
+
+.fake-text {
+    height: 10px;
+    background: #f1f5f9;
+    margin-bottom: 8px;
+    width: 100%;
+    border-radius: 4px;
+}
+
+/* --- RIGHT PANEL: AI INTERFACE --- */
+.ai-panel {
+    width: 50%;
+    /* Subtle background for the panel itself */
+    background: radial-gradient(circle at center, #fff 0%, #f3f4f6 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 40px;
+    position: relative;
+}
+
+.ai-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--primary-black);
+    background: rgba(255,255,255,0.6);
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,0,0,0.05);
+    backdrop-filter: blur(4px);
+}
+
+.pulsing-dot {
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: var(--primary-black);
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+.close-btn:hover { opacity: 1; }
+
+/* --- ORB CONTAINER --- */
+.orb-container {
+    position: relative;
+    width: 320px;
+    height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* The Animated Holographic Blob */
+.holographic-orb {
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    
+    /* Complex Gradient Stack */
+    background-image: 
+        radial-gradient(circle at 50% 50%, var(--holo-yellow) 0%, transparent 60%),
+        radial-gradient(circle at 100% 0%, var(--holo-pink) 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, var(--holo-green) 0%, transparent 50%),
+        radial-gradient(circle at 100% 100%, var(--holo-peach) 0%, transparent 50%);
+        
+    /* Oversize the background to allow movement */
+    background-size: 160% 160%;
+    
+    /* Filters to blend and glow */
+    filter: blur(10px);
+    box-shadow: 0 0 80px rgba(243, 228, 149, 0.3);
+    
+    /* Animations */
+    animation: 
+        fluid-colors 10s ease infinite,
+        breathe 6s ease-in-out infinite alternate;
+}
+
+/* Optional Glare for 3D effect */
+.orb-glare {
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8) 0%, transparent 20%);
+    opacity: 0.6;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+}
+
+/* --- KEYFRAMES --- */
+
+/* Move the background gradients around */
+@keyframes fluid-colors {
+    0% {
+        background-position: 0% 50%;
+        transform: rotate(0deg) scale(1);
+        border-radius: 50%;
+    }
+    25% {
+        background-position: 100% 0%;
+        border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%;
+    }
+    50% {
+        background-position: 100% 100%;
+        transform: rotate(180deg) scale(1.02);
+        border-radius: 50% 50% 55% 45% / 55% 45% 50% 50%;
+    }
+    75% {
+        background-position: 0% 100%;
+        border-radius: 45% 55% 50% 50% / 50% 45% 55% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+        transform: rotate(360deg) scale(1);
+        border-radius: 50%;
+    }
+}
+
+/* Subtle size pulse */
+@keyframes breathe {
+    0% { transform: scale(0.98); }
+    100% { transform: scale(1.05); }
+}
+
+
+/* --- STATUS TEXT --- */
+.ai-status {
+    text-align: center;
+    z-index: 5;
+    margin-top: -20px;
+}
+
+.ai-status h2 {
+    font-family: var(--font-serif);
+    font-size: 32px;
+    color: var(--primary-black);
+    margin-bottom: 8px;
+}
+
+.ai-status p {
+    color: var(--text-muted);
+    font-size: 16px;
+}
+
+/* --- CONTROLS --- */
+.ai-controls {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+}
+
+.control-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: white;
+    border: 1px solid rgba(0,0,0,0.1);
+    color: var(--primary-black);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.control-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+
+.mic-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--primary-black);
+    color: white;
+    border: none;
+    font-size: 24px;
+    cursor: pointe

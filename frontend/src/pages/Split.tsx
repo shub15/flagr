@@ -4,24 +4,25 @@ import {
     Check,
     ShieldAlert,
     Coins,
-    Wand2,
     Plus,
     Info,
     Sparkles,
     CornerDownLeft,
-    Copy,
     Share2,
     ThumbsUp,
     ThumbsDown,
     Globe,
-    Lightbulb
-
-
+    Lightbulb,
+    Mic,
+    Square,
+    X,
+    ChevronDown,
+    ChevronUp,
+    Download,
 } from 'lucide-react';
 
 import api from '../services/api';
 import { config } from '../config';
-import RefineTab from './RefineTab';
 
 interface Step {
     label: string;
@@ -59,6 +60,100 @@ interface CouncilTransparencyResponse {
     agents: AgentCouncilResponse[];
 }
 
+const RefinementCard = ({ change }: { change: RefinementChange }) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+            {/* Header */}
+            <div className="p-4 border-b border-gray-50 flex items-center justify-between bg-gray-50/50">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold tracking-wide 
+                    ${change.category === 'CRITICAL' ? 'bg-red-100 text-red-700' :
+                        change.category === 'MISSING' ? 'bg-purple-100 text-purple-700' :
+                            change.category === 'NEGOTIABLE' ? 'bg-amber-100 text-amber-700' :
+                                'bg-gray-100 text-gray-700'}`}>
+                    {change.category}
+                </span>
+                <div className="flex gap-2">
+                    <button className="text-xs font-medium text-green-700 hover:bg-green-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-green-100 transition-colors">
+                        Accept
+                    </button>
+                    <button className="text-xs font-medium text-gray-500 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors">
+                        Reject
+                    </button>
+                </div>
+            </div>
+
+            <div className="p-5 flex flex-col gap-4">
+                {/* Original or Missing */}
+                <div className="space-y-2">
+                    <h4 className="text-xs uppercase tracking-wider text-gray-400 font-semibold flex items-center gap-2">
+                        {change.original_clause ? 'Original Clause' : 'Status'}
+                    </h4>
+                    {change.original_clause ? (
+                        <div className="p-4 bg-red-50/30 rounded-lg text-sm text-gray-600 leading-relaxed border border-red-100/50 font-mono">
+                            {change.original_clause}
+                        </div>
+                    ) : (
+                        <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-500 italic border border-gray-100">
+                            <span className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                                Missing Clause
+                            </span>
+                        </div>
+                    )}
+                </div>
+
+                {/* Improved */}
+                <div className="space-y-2">
+                    <h4 className="text-xs uppercase tracking-wider text-green-600 font-semibold">
+                        {change.category === 'MISSING' ? 'Proposed Addition' : 'Improved Version'}
+                    </h4>
+                    <div className="p-4 bg-green-50/30 rounded-lg text-sm text-gray-800 leading-relaxed border border-green-100/50 shadow-sm">
+                        {change.improved_clause}
+                    </div>
+                </div>
+            </div>
+
+            {/* Accordion Reasoning */}
+            <div className="border-t border-gray-100">
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="w-full flex items-center justify-between p-3 bg-gray-50/30 hover:bg-gray-50 transition-colors text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                    <span className="pl-2">Reasoning & Analysis</span>
+                    {isOpen ? <ChevronUp className="w-4 h-4 mr-2" /> : <ChevronDown className="w-4 h-4 mr-2" />}
+                </button>
+                {isOpen && (
+                    <div className="p-5 pt-2 bg-blue-50/10 text-sm text-gray-600 leading-relaxed border-t border-gray-100 animate-slide-in">
+                        <div className="flex gap-3">
+                            <div className="min-w-[4px] bg-blue-500/20 rounded-full my-1"></div>
+                            <div>{change.reasoning}</div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+interface RefinementChange {
+    change_id: string;
+    category: 'CRITICAL' | 'MISSING' | 'NEGOTIABLE' | 'Standard';
+    original_clause: string | null;
+    improved_clause: string;
+    reasoning: string;
+    affected_issue: string;
+}
+
+interface RefinementData {
+    review_id: string;
+    total_changes: number;
+    changes: RefinementChange[];
+    summary: string;
+    mode: string;
+}
+
 const SUGGESTED_BACKUPS = [
     "Explain this legal term in simple English",
     "Find latest past cases related to this",
@@ -71,7 +166,6 @@ const SUGGESTED_BACKUPS = [
 function Split() {
     const location = useLocation();
     const { reviewId } = useParams<{ reviewId: string }>();
-    const navigate = useNavigate();
     const { file, purpose, context } = location.state || {};
 
     const [showResults, setShowResults] = useState(false);
@@ -86,7 +180,6 @@ function Split() {
     const [currentStepIndex, setCurrentStepIndex] = useState(-1);
     const [logEntry, setLogEntry] = useState('Initializing neural council...');
     const [apiComplete, setApiComplete] = useState(false);
-    const [apiError, setApiError] = useState<string | null>(null);
 
     // Review data from API
     const [reviewData, setReviewData] = useState<any>(null);
@@ -96,7 +189,6 @@ function Split() {
     const [showCorrectionInput, setShowCorrectionInput] = useState(false);
 
     const [correctionText, setCorrectionText] = useState('');
-    const [showQueuePopup, setShowQueuePopup] = useState(false);
 
 
     // Translation State
@@ -112,7 +204,21 @@ function Split() {
     const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
     const [chatInput, setChatInput] = useState('');
     const [isChatLoading, setIsChatLoading] = useState(false);
+    const [refinementData, setRefinementData] = useState<RefinementData | null>(null);
+    const [isRefineLoading, setIsRefineLoading] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
+
+    // Removed incorrect placement of refine logic
+
     const messagesEndRef = React.useRef<HTMLDivElement>(null);
+
+    // Voice State
+    const [isRecording, setIsRecording] = useState(false);
+    const [isVoiceMode, setIsVoiceMode] = useState(false);
+    const [voiceStatus, setVoiceStatus] = useState("Idle"); // Idle, Listening, Processing, Speaking
+    const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+    const [shouldPlayResponse, setShouldPlayResponse] = useState(false);
+
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -175,6 +281,42 @@ function Split() {
     // Helper to derive current review id
     const currentReviewId = reviewId || reviewData?.review_id;
 
+    useEffect(() => {
+        if (rightPanelTab === 'refine' && currentReviewId && !refinementData) {
+            fetchRefinements();
+        }
+    }, [rightPanelTab, currentReviewId]);
+
+    const fetchRefinements = async () => {
+        if (!currentReviewId) return;
+        setIsRefineLoading(true);
+        try {
+            const res = await api.get(`/api/reviews/${currentReviewId}/refinement-preview`);
+            setRefinementData(res.data);
+        } catch (err) {
+            console.error("Failed to fetch refinements", err);
+        } finally {
+            setIsRefineLoading(false);
+        }
+    };
+
+    const handleRefineDownload = async () => {
+        if (!currentReviewId) return;
+        setIsDownloading(true);
+        try {
+            // First apply feedback/refinements
+            await api.post(`/api/reviews/${currentReviewId}/refine-with-feedback`);
+
+            // Then download the PDF
+            window.open(`${config.apiBaseUrl}/api/reviews/${currentReviewId}/custom-refined-pdf`, '_blank');
+        } catch (err) {
+            console.error("Failed to download refined PDF", err);
+            // Optionally show error toast here
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
     const handleShare = () => {
         if (!currentReviewId) {
             setApiError('No review id available for share');
@@ -206,7 +348,95 @@ function Split() {
         }
     };
 
-    const handleSendMessage = async (text?: string) => {
+    const playAudioResponse = async (text: string) => {
+        try {
+            setVoiceStatus("Speaking");
+            const res = await api.post('/api/voice/tts', { text }, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const audio = new Audio(url);
+            audio.onended = () => {
+                setVoiceStatus("Idle");
+                // If in voice mode, maybe restart listening automatically? For now, back to idle.
+            };
+            audio.play();
+        } catch (err) {
+            console.error("TTS Error", err);
+            setVoiceStatus("Idle");
+        }
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            const chunks: BlobPart[] = [];
+
+            recorder.ondataavailable = (e) => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'audio/wav' });
+                const formData = new FormData();
+                formData.append('file', blob, 'recording.wav');
+
+                // Stop tracks
+                stream.getTracks().forEach(track => track.stop());
+
+                setIsChatLoading(true);
+                setVoiceStatus("Processing");
+                try {
+                    const res = await api.post('/api/voice/stt', formData, {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+                    if (res.data.text) {
+                        setChatInput(res.data.text);
+                        // Auto-send and enable TTS
+                        handleSendMessage(res.data.text, true);
+                    } else {
+                        setVoiceStatus("Idle");
+                    }
+                } catch (err) {
+                    console.error("STT Error", err);
+                    setVoiceStatus("Error");
+                } finally {
+                    setIsChatLoading(false);
+                }
+            };
+
+            recorder.start();
+            setMediaRecorder(recorder);
+            setIsRecording(true);
+            setVoiceStatus("Listening");
+
+            // If we are in voice mode, we might want to auto start listening logic if needed, 
+            // but simplified flow is: user clicks mic to speak.
+        } catch (err) {
+            console.error("Mic Error", err);
+            alert("Could not access microphone");
+            setVoiceStatus("Error");
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+            setIsRecording(false);
+            setMediaRecorder(null);
+        }
+    };
+
+    const toggleVoiceMode = () => {
+        setIsVoiceMode(!isVoiceMode);
+        if (!isVoiceMode) {
+            // Entered Voice Mode
+            setVoiceStatus("Idle");
+        } else {
+            // Exited Voice Mode
+            stopRecording();
+        }
+    };
+
+    const handleSendMessage = async (text?: string, fromVoice: boolean = false) => {
         const messageText = text || chatInput;
         if (!messageText.trim()) return;
 
@@ -216,6 +446,9 @@ function Split() {
         setIsChatLoading(true);
 
         try {
+            let replyText = "";
+            let newMsg: ChatMessage | null = null;
+
             if (messageText === "Fetch latest news on this topic" || messageText === "Find latest past cases related to this") {
                 const query = messageText === "Fetch latest news on this topic" ? "latest law news" : "latest law cases";
                 const response = await api.post('/api/search', {
@@ -223,18 +456,20 @@ function Split() {
                 });
 
                 if (response.data.organic) {
-                    setChatMessages(prev => [...prev, {
+                    replyText = `Here are the latest ${messageText.includes("news") ? "news" : "cases"} I found:`;
+                    newMsg = {
                         role: 'assistant',
-                        content: `Here are the latest ${messageText.includes("news") ? "news" : "cases"} I found:`,
+                        content: replyText,
                         searchResults: response.data.organic,
                         suggestions: SUGGESTED_BACKUPS.slice(0, 3)
-                    }]);
+                    };
                 } else {
-                    setChatMessages(prev => [...prev, {
+                    replyText = "I couldn't find any relevant results at the moment.";
+                    newMsg = {
                         role: 'assistant',
-                        content: "I couldn't find any relevant results at the moment.",
+                        content: replyText,
                         suggestions: SUGGESTED_BACKUPS.slice(0, 3)
-                    }]);
+                    };
                 }
             } else {
                 if (!currentReviewId) throw new Error("No review ID");
@@ -247,19 +482,34 @@ function Split() {
                 const shuffled = [...SUGGESTED_BACKUPS].sort(() => 0.5 - Math.random());
                 const selectedSuggestions = shuffled.slice(0, 3);
 
-                setChatMessages(prev => [...prev, {
+                replyText = response.data.answer;
+                newMsg = {
                     role: 'assistant',
-                    content: response.data.answer,
+                    content: replyText,
                     quotes: response.data.supporting_quotes,
                     suggestions: selectedSuggestions
-                }]);
+                };
             }
+
+            if (newMsg) {
+                setChatMessages(prev => [...prev, newMsg!]);
+                if (fromVoice || shouldPlayResponse) {
+                    playAudioResponse(replyText);
+                    setShouldPlayResponse(false);
+                }
+            }
+
         } catch (err: any) {
             console.error('Chat/Search failed:', err);
+            const errText = "I'm sorry, I couldn't process that request. Please try again.";
             setChatMessages(prev => [...prev, {
                 role: 'assistant',
-                content: "I'm sorry, I couldn't process that request. Please try again."
+                content: errText
             }]);
+            if (fromVoice || shouldPlayResponse) {
+                playAudioResponse(errText);
+                setShouldPlayResponse(false);
+            }
         } finally {
             setIsChatLoading(false);
         }
@@ -285,7 +535,6 @@ function Split() {
                     setShowResults(true);
                 } catch (err: any) {
                     console.error('Error fetching review:', err);
-                    setApiError(err.response?.data?.detail || 'Failed to fetch review');
                     setApiComplete(true);
                 }
                 return;
@@ -293,7 +542,6 @@ function Split() {
 
             // Otherwise, create new review from uploaded file
             if (!file) {
-                setApiError('No file provided');
                 setApiComplete(true);
                 return;
             }
@@ -323,7 +571,6 @@ function Split() {
                 window.history.replaceState(null, '', `/split/${newReviewId}`);
             } catch (err: any) {
                 console.error('Error generating review:', err);
-                setApiError(err.response?.data?.detail || 'Failed to generate review');
                 setApiComplete(true);
             }
         };
@@ -601,45 +848,97 @@ function Split() {
                     <div className="w-full md:w-[42%] flex flex-col bg-white/60 backdrop-blur-sm">
                         {/* Tab Header */}
                         <div className="flex border-b border-gray-200 bg-white/50 backdrop-blur-sm sticky top-0 z-20">
-                            <button
-                                onClick={() => setRightPanelTab('analysis')}
-                                className={`flex-1 py-4 text-sm font-semibold transition-all relative ${rightPanelTab === 'analysis'
-                                    ? 'text-[#064E3B]'
-                                    : 'text-gray-500 hover:text-gray-700'
-                                    }`}
-                            >
-                                Analysis
-                                {rightPanelTab === 'analysis' && (
-                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#064E3B]"></div>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => setRightPanelTab('chat')}
-                                className={`flex-1 py-4 text-sm font-semibold transition-all relative ${rightPanelTab === 'chat'
-                                    ? 'text-[#064E3B]'
-                                    : 'text-gray-500 hover:text-gray-700'
-                                    }`}
-                            >
-                                Chat Assistant
-                                {rightPanelTab === 'chat' && (
-                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#064E3B]"></div>
-                                )}
-                            </button>
-                            <button
-                                onClick={() => setRightPanelTab('refine')}
-                                className={`flex-1 py-4 text-sm font-semibold transition-all relative ${rightPanelTab === 'refine'
-                                    ? 'text-[#064E3B]'
-                                    : 'text-gray-500 hover:text-gray-700'
-                                    }`}
-                            >
-                                Refine
-                                {rightPanelTab === 'refine' && (
-                                    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#064E3B]"></div>
-                                )}
-                            </button>
+                            {isVoiceMode ? (
+                                <div className="flex-1 py-4 flex items-center justify-between px-6">
+                                    <div className="flex items-center gap-2">
+                                        <div className="live-indicator">
+                                            <div className="pulsing-dot"></div>
+                                            <span>LIVE VOICE</span>
+                                        </div>
+                                    </div>
+                                    <button onClick={toggleVoiceMode} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                                        <X className="w-5 h-5 text-gray-500" />
+                                    </button>
+                                </div>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={() => setRightPanelTab('analysis')}
+                                        className={`flex-1 py-4 text-sm font-semibold transition-all relative ${rightPanelTab === 'analysis'
+                                            ? 'text-[#064E3B]'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                            }`}
+                                    >
+                                        Analysis
+                                        {rightPanelTab === 'analysis' && (
+                                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#064E3B]"></div>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => setRightPanelTab('chat')}
+                                        className={`flex-1 py-4 text-sm font-semibold transition-all relative ${rightPanelTab === 'chat'
+                                            ? 'text-[#064E3B]'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                            }`}
+                                    >
+                                        Chat Assistant
+                                        {rightPanelTab === 'chat' && (
+                                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#064E3B]"></div>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={() => setRightPanelTab('refine')}
+                                        className={`flex-1 py-4 text-sm font-semibold transition-all relative ${rightPanelTab === 'refine'
+                                            ? 'text-[#064E3B]'
+                                            : 'text-gray-500 hover:text-gray-700'
+                                            }`}
+                                    >
+                                        Refine
+                                        {rightPanelTab === 'refine' && (
+                                            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#064E3B]"></div>
+                                        )}
+                                    </button>
+                                </>
+                            )}
                         </div>
 
-                        {rightPanelTab === 'analysis' ? (
+                        {isVoiceMode ? (
+                            <div className="flex-1 flex flex-col items-center justify-center relative p-6 bg-[radial-gradient(circle_at_center,#fff_0%,#f3f4f6_100%)]">
+                                <div className="orb-container mb-12">
+                                    {voiceStatus === "Speaking" && (
+                                        <>
+                                            <div className="speaking-wave" style={{ animationDelay: '0s' }}></div>
+                                            <div className="speaking-wave" style={{ animationDelay: '0.6s' }}></div>
+                                            <div className="speaking-wave" style={{ animationDelay: '1.2s' }}></div>
+                                        </>
+                                    )}
+                                    <div className={`holographic-orb ${voiceStatus === "Speaking" ? "animate-pulse" : ""}`}></div>
+                                    <div className="orb-glare"></div>
+                                </div>
+
+                                <div className="ai-status text-center z-10">
+                                    <h2 className="font-serif text-3xl text-black mb-2">
+                                        {voiceStatus === "Listening" ? "Listening..." :
+                                            voiceStatus === "Processing" ? "Processing..." :
+                                                voiceStatus === "Speaking" ? "Speaking..." : "I'm listening"}
+                                    </h2>
+                                    <p className="text-gray-400">
+                                        {voiceStatus === "Listening" ? "Go ahead, I'm all ears." :
+                                            voiceStatus === "Speaking" ? "Answering your question..." :
+                                                "Tap the microphone to speak"}
+                                    </p>
+                                </div>
+
+                                <div className="absolute bottom-10 flex gap-4">
+                                    <button
+                                        onClick={isRecording ? stopRecording : startRecording}
+                                        className={`w-16 h-16 rounded-full flex items-center justify-center text-white transition-all shadow-lg hover:scale-105 active:scale-95 ${isRecording ? 'bg-red-500' : 'bg-black'}`}
+                                    >
+                                        {isRecording ? <Square className="w-6 h-6 fill-current" /> : <Mic className="w-8 h-8" />}
+                                    </button>
+                                </div>
+                            </div>
+                        ) : rightPanelTab === 'analysis' ? (
                             /* ANALYSIS CONTENT */
                             <div className="flex-1 overflow-y-auto custom-scroll p-6">
                                 {/* Verdict Card */}
@@ -1115,6 +1414,16 @@ function Split() {
                                                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z" /><path d="M22 2 11 13" /></svg>
                                             )}
                                         </button>
+                                        <button
+                                            onClick={() => {
+                                                toggleVoiceMode();
+                                                setTimeout(() => startRecording(), 500); // Auto-start recording on enter? Maybe let user click.
+                                            }}
+                                            className={`absolute right-14 top-1/2 -translate-y-1/2 p-2 rounded-full transition-all text-gray-400 hover:text-gray-600 hover:bg-gray-100`}
+                                            title="Switch to Voice Mode"
+                                        >
+                                            <Mic className="w-5 h-5" />
+                                        </button>
                                     </div>
                                     <div className="flex justify-center gap-3 mt-4">
                                         <button
@@ -1133,11 +1442,52 @@ function Split() {
                                 </div>
                             </div>
                         ) : (
-                            <RefineTab onDownload={() => {
-                                if (currentReviewId) {
-                                    window.open(`http://localhost:8000/api/reviews/${currentReviewId}/export/pdf`, '_blank');
-                                }
-                            }} />
+                            <div className="flex-1 overflow-y-auto custom-scroll p-6">
+                                {isRefineLoading ? (
+                                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                                        <div className="w-8 h-8 border-2 border-green-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+                                        <p>Generating refinements...</p>
+                                    </div>
+                                ) : refinementData ? (
+                                    <div className="space-y-6">
+                                        <div className="mb-6">
+                                            <div className="flex justify-between items-start gap-4">
+                                                <div>
+                                                    <h3 className="font-serif text-2xl mb-2 text-gray-900">Contract Refinement</h3>
+
+                                                </div>
+                                                <button
+                                                    onClick={handleRefineDownload}
+                                                    disabled={isDownloading}
+                                                    className="p-2.5 bg-green-700 hover:bg-green-800 disabled:bg-green-700/50 text-white rounded-lg transition-colors shrink-0 shadow-sm flex items-center justify-center min-w-[42px]"
+                                                    title="Download Refined PDF"
+                                                >
+                                                    {isDownloading ? (
+                                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                                    ) : (
+                                                        <Download className="w-5 h-5" />
+                                                    )}
+                                                </button>
+                                            </div>
+                                            <div className="mt-4 flex gap-4 text-sm font-medium text-gray-500 border-t border-gray-100 pt-4">
+                                                <span>{refinementData.total_changes} Changes Proposed</span>
+                                                <span>•</span>
+                                                <span className="capitalize">{refinementData.mode} Mode</span>
+                                            </div>
+                                        </div>
+
+                                        {refinementData.changes.map((change) => (
+                                            <RefinementCard key={change.change_id} change={change} />
+                                        ))}
+
+                                        <div className="h-20 sm:hidden"></div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                                        <p>No refinements available. Try analyzing a contract first.</p>
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
                 </div>

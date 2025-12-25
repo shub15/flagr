@@ -108,6 +108,18 @@ class ContractReviewResult(BaseModel):
         }
 
 
+class ClauseFeedback(BaseModel):
+    """User feedback on a single clause."""
+    change_id: str
+    action: str = Field(..., description="'accept' or 'ignore'")
+
+
+class RefinementFeedbackRequest(BaseModel):
+    """User feedback on all clauses."""
+    feedback: List[ClauseFeedback] = Field(default_factory=list, description="Empty list = accept all changes")
+    refinement_mode: str = Field(default="balanced", description="balanced or unilateral")
+
+
 class FeedbackRequest(BaseModel):
     """User feedback for learning loop (RLHF-lite)."""
     review_id: str
@@ -292,4 +304,3 @@ class CustomRefinedContractResponse(BaseModel):
     ignored_changes: int
     refined_contract: str
     pdf_url: Optional[str] = None
-

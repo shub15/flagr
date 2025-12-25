@@ -149,3 +149,145 @@ html {
 .hidden-step {
   display: none;
 }
+
+/* --- AGI VOICE UI STYLES --- */
+.orb-container {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.holographic-orb {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+
+  /* Complex Gradient Stack */
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(243, 228, 149, 0.8) 0%, transparent 60%),
+    radial-gradient(circle at 100% 0%, rgba(241, 152, 148, 0.8) 0%, transparent 50%),
+    radial-gradient(circle at 0% 100%, rgba(111, 156, 79, 0.6) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(250, 205, 159, 0.8) 0%, transparent 50%);
+
+  /* Oversize the background to allow movement */
+  background-size: 160% 160%;
+
+  /* Filters to blend and glow */
+  filter: blur(10px);
+  box-shadow: 0 0 80px rgba(243, 228, 149, 0.3);
+
+  /* Animations */
+  animation:
+    fluid-colors 10s ease infinite,
+    breathe 6s ease-in-out infinite alternate;
+}
+
+.orb-glare {
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8) 0%, transparent 20%);
+  opacity: 0.6;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+@keyframes fluid-colors {
+  0% {
+    background-position: 0% 50%;
+    transform: rotate(0deg) scale(1);
+    border-radius: 50%;
+  }
+
+  25% {
+    background-position: 100% 0%;
+    border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%;
+  }
+
+  50% {
+    background-position: 100% 100%;
+    transform: rotate(180deg) scale(1.02);
+    border-radius: 50% 50% 55% 45% / 55% 45% 50% 50%;
+  }
+
+  75% {
+    background-position: 0% 100%;
+    border-radius: 45% 55% 50% 50% / 50% 45% 55% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+    transform: rotate(360deg) scale(1);
+    border-radius: 50%;
+  }
+}
+
+@keyframes breathe {
+  0% {
+    transform: scale(0.98);
+  }
+
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+.pulsing-dot {
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.speaking-wave {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.1);
+  opacity: 0;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: ripple 2s infinite cubic-bezier(0, 0.2, 0.8, 1);
+  z-index: 0;
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  0% {
+    width: 260px;
+    height: 260px;
+    opacity: 0.6;
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  100% {
+    width: 600px;
+    height: 600px;
+    opacity: 0;
+    border-color: rgba(0, 0, 0, 0);
+  }
+}
