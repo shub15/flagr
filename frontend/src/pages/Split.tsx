@@ -19,6 +19,7 @@ import {
     ChevronDown,
     ChevronUp,
     Download,
+    Trello,
 } from 'lucide-react';
 
 import api from '../services/api';
@@ -60,7 +61,11 @@ interface CouncilTransparencyResponse {
     agents: AgentCouncilResponse[];
 }
 
-const RefinementCard = ({ change }: { change: RefinementChange }) => {
+const RefinementCard = ({ change, status, onDecision }: {
+    change: RefinementChange;
+    status: 'accepted' | 'rejected' | null;
+    onDecision: (status: 'accepted' | 'rejected') => void;
+}) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -75,12 +80,26 @@ const RefinementCard = ({ change }: { change: RefinementChange }) => {
                     {change.category}
                 </span>
                 <div className="flex gap-2">
-                    <button className="text-xs font-medium text-green-700 hover:bg-green-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-green-100 transition-colors">
-                        Accept
-                    </button>
-                    <button className="text-xs font-medium text-gray-500 hover:bg-gray-100 px-3 py-1.5 rounded-lg transition-colors">
-                        Reject
-                    </button>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => onDecision('accepted')}
+                            className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${status === 'accepted'
+                                ? 'bg-green-700 text-white border-green-700 hover:bg-green-800'
+                                : 'text-green-700 hover:bg-green-50 border-transparent hover:border-green-100'
+                                }`}
+                        >
+                            Accept
+                        </button>
+                        <button
+                            onClick={() => onDecision('rejected')}
+                            className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors ${status === 'rejected'
+                                ? 'bg-gray-800 text-white border-gray-800 hover:bg-gray-900'
+                                : 'text-gray-500 hover:bg-gray-100 border-transparent'
+                                }`}
+                        >
+                            Reject
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -158,8 +177,6 @@ const SUGGESTED_BACKUPS = [
     "Explain this legal term in simple English",
     "Find latest past cases related to this",
     "Fetch latest news on this topic",
-    "What are the risks here?",
-    "Suggest a redline for this",
     "Is this standard market practice?"
 ];
 
@@ -180,6 +197,7 @@ function Split() {
     const [currentStepIndex, setCurrentStepIndex] = useState(-1);
     const [logEntry, setLogEntry] = useState('Initializing neural council...');
     const [apiComplete, setApiComplete] = useState(false);
+    const [showRefineOptions, setShowRefineOptions] = useState(false);
 
     // Review data from API
     const [reviewData, setReviewData] = useState<any>(null);
@@ -209,6 +227,15 @@ function Split() {
     const [refinementData, setRefinementData] = useState<RefinementData | null>(null);
     const [isRefineLoading, setIsRefineLoading] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    // Track user decisions for each change_id
+    const [decisions, setDecisions] = useState<Record<string, 'accepted' | 'rejected'>>({});
+
+    const handleDecision = (changeId: string, status: 'accepted' | 'rejected') => {
+        setDecisions(prev => ({
+            ...prev,
+            [changeId]: prev[changeId] === status ? null : status // Toggle if same clicked (or just set it?) - treating as set for now, or toggle if we want to unselect
+        } as any)); // Simple set for now
+    };
 
     // Removed incorrect placement of refine logic
 
@@ -1055,12 +1082,35 @@ function Split() {
                                             >
                                                 Correct agent
                                             </button>
-                                            <button
-                                                onClick={() => setRightPanelTab('refine')}
-                                                className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all flex items-center justify-center gap-2"
-                                            >
-                                                Refine contract
-                                            </button>
+                                            {showRefineOptions ? (
+                                                <div className="flex-1 flex gap-2 animate-in fade-in zoom-in duration-200">
+                                                    <button
+                                                        onClick={() => {
+                                                            setRightPanelTab('refine');
+                                                            setShowRefineOptions(false);
+                                                        }}
+                                                        className="flex-1 bg-[#166534] text-white text-lg font-serif px-3 py-2.5 rounded-xl hover:bg-[#14532d] transition-all"
+                                                    >
+                                                        Balanced
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            setRightPanelTab('refine');
+                                                            setShowRefineOptions(false);
+                                                        }}
+                                                        className="flex-1 bg-[#166534] text-white text-lg font-serif px-3 py-2.5 rounded-xl hover:bg-[#14532d] transition-all"
+                                                    >
+                                                        Unilateral
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    onClick={() => setShowRefineOptions(true)}
+                                                    className="flex-1 bg-[#166534] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all flex items-center justify-center gap-2"
+                                                >
+                                                    Refine contract
+                                                </button>
+                                            )}
                                         </div>
                                         {showCorrectionInput && (
                                             <div className="mt-4 space-y-3">
@@ -1210,6 +1260,14 @@ function Split() {
                                             <div className="text-center py-8 text-gray-400 text-sm">
                                                 {reviewData ? `No ${activeTab} points found` : 'Loading findings...'}
                                             </div>
+                                        )}
+
+                                        {/* Add to Trello Button */}
+                                        {activeTab === 'negotiable' && getActiveFindings().length > 0 && (
+                                            <button className="w-full bg-[#0079BF] hover:bg-[#026AA7] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md mt-4">
+                                                <Trello className="w-4 h-4" />
+                                                Add to Trello
+                                            </button>
                                         )}
                                     </div>
                                 </div>
@@ -1452,20 +1510,7 @@ function Split() {
                                             <Mic className="w-5 h-5" />
                                         </button>
                                     </div>
-                                    <div className="flex justify-center gap-3 mt-4">
-                                        <button
-                                            onClick={() => handleSendMessage("Suggest redlines for critical issues")}
-                                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                                        >
-                                            Suggest Redlines
-                                        </button>
-                                        <button
-                                            onClick={() => handleSendMessage("Explain the risks in this contract")}
-                                            className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors font-medium"
-                                        >
-                                            Explain Risks
-                                        </button>
-                                    </div>
+
                                 </div>
                             </div>
                         ) : (
@@ -1504,7 +1549,12 @@ function Split() {
                                         </div>
 
                                         {refinementData.changes.map((change) => (
-                                            <RefinementCard key={change.change_id} change={change} />
+                                            <RefinementCard
+                                                key={change.change_id}
+                                                change={change}
+                                                status={decisions[change.change_id] || null}
+                                                onDecision={(status) => handleDecision(change.change_id, status)}
+                                            />
                                         ))}
 
                                         <div className="h-20 sm:hidden"></div>

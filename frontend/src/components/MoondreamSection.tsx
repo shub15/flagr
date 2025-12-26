@@ -66,6 +66,31 @@ const MoondreamSection: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Part 3: Video Left, Text Right */}
+                <div className="glass-panel rounded-[40px] p-8 md:p-12 mb-12 mt-12">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                        {/* LHS Video Placeholder */}
+                        <div className="aspect-video bg-black/5 rounded-2xl flex items-center justify-center border border-black/5 overflow-hidden relative group">
+                            <div className="absolute inset-0 bg-gradient-to-tr from-gray-100 to-gray-50 opacity-50"></div>
+                            <video className="relative z-10 w-full h-full object-cover" autoPlay loop muted playsInline>
+                                <source src="/override-trello.mp4" type="video/mp4" />
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+
+                        {/* RHS Text */}
+                        <div>
+                            <h2 className="font-georgia text-3xl md:text-4xl font-normal mb-6 leading-tight">
+                                Integration across your ecosystem <br />
+                                <span className="text-gray-400"></span>
+                            </h2>
+                            <p className="text-gray-600 font-light text-lg leading-relaxed">
+                                Connect multiple tools and platforms seamlessly, ensuring your data flows smoothly across your entire ecosystem.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     );

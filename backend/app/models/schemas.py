@@ -293,7 +293,7 @@ class ClauseFeedback(BaseModel):
 
 class RefinementFeedbackRequest(BaseModel):
     """User feedback on all clauses."""
-    feedback: List[ClauseFeedback]
+    feedback: List[ClauseFeedback] = Field(default_factory=list)
     refinement_mode: str = Field(default="balanced", description="balanced or unilateral")
 
 

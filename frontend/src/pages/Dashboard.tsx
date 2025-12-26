@@ -16,7 +16,8 @@ import {
     Lock,
     Clock,
     Plus,
-    AlertCircle
+    AlertCircle,
+    Check
 } from 'lucide-react';
 import api from '../services/api';
 import CalendarTab from './CalendarTab';
@@ -95,11 +96,15 @@ const Dashboard = () => {
     };
 
     const handleConnect = () => {
-        // Open Google OAuth screen in new window
+        const width = 500;
+        const height = 600;
+        const left = window.screen.width / 2 - width / 2;
+        const top = window.screen.height / 2 - height / 2;
+
         window.open(
-            'https://accounts.google.com/signin/v2/identifier?flowName=GlifWebSignIn&flowEntry=ServiceLogin',
-            '_blank',
-            'width=500,height=600'
+            'https://myaccount.google.com/',
+            'Google Sign In',
+            `width=${width},height=${height},top=${top},left=${left}`
         );
     };
 
@@ -453,9 +458,10 @@ const Dashboard = () => {
                                 </div>
                                 <button
                                     onClick={handleConnect}
-                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
+                                    className="w-full bg-white text-[#166534] border border-[#BBF7D0] text-2xl font-serif px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
                                 >
-                                    Connect
+                                    <Check className="w-6 h-6" />
+                                    Connected
                                 </button>
                             </div>
 
@@ -496,13 +502,8 @@ const Dashboard = () => {
                                         </p>
                                     </div>
                                 </div>
-
-                                {/* Connected Button */}
-                                <button
-                                    disabled
-                                    className="w-full bg-white border border-green-600 text-green-700 text-2xl font-serif px-5 py-2.5 rounded-xl flex items-center justify-center gap-2 cursor-default"
-                                >
-                                    <span className="text-green-600">✓</span>
+                                <button className="w-full bg-white text-[#166534] border border-[#BBF7D0] text-2xl font-serif px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2">
+                                    <Check className="w-6 h-6" />
                                     <a href="https://trello.com/b/yjZMyk8g/orchid" target='_blank'>Connected</a>
                                 </button>
                             </div>

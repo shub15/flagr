@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
     Bell,
@@ -13,7 +13,23 @@ import {
 } from 'lucide-react';
 
 const Knowledge = () => {
-    // Shared state for toggle switches (mocked for UI purposes)
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Default User Documents
+    const [userItems, setUserItems] = useState([
+        {
+            id: 'remote-policy',
+            title: 'Internal Remote Work Policy',
+            meta: 'Uploaded 5 hours ago'
+        },
+        {
+            id: 'sales-agreement',
+            title: 'Q3 Sales Agreement_Final',
+            meta: 'Uploaded 1 day ago'
+        }
+    ]);
+
+    // Shared state for toggle switches
     const [toggles, setToggles] = useState<Record<string, boolean>>({
         'cal-labor': true,
         'nda-template': true,
@@ -29,28 +45,20 @@ const Knowledge = () => {
         setToggles(prev => ({ ...prev, [id]: !prev[id] }));
     };
 
-    // Upload Simulation State
-    const [extraDocs, setExtraDocs] = useState<any[]>([]);
-    const [isUploading, setIsUploading] = useState(false);
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const newId = `doc-${Date.now()}`;
+            // Add new file to the top of the list
+            setUserItems(prev => [{
+                id: newId,
+                title: 'document 1',
+                meta: 'Uploaded Just now'
+            }, ...prev]);
 
-    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setIsUploading(true);
-
-        // Simulate upload delay
-        setTimeout(() => {
-            const newDoc = {
-                id: `new-doc-${Date.now()}`,
-                title: 'Document 1', // Fixed name as requested, or could use file.name
-                meta: 'Just now • Uploaded',
-                active: true,
-                isUser: true
-            };
-            setExtraDocs(prev => [newDoc, ...prev]);
-            setIsUploading(false);
-        }, 2000);
+            // Enable toggle by default for new files
+            setToggles(prev => ({ ...prev, [newId]: true }));
+        }
     };
 
     return (
@@ -112,22 +120,19 @@ const Knowledge = () => {
 
                 {/* Upload Section */}
                 <section className="mb-8">
-                    <input
-                        type="file"
-                        id="file-upload"
-                        className="hidden"
-                        onChange={handleFileUpload}
-                        accept=".pdf,.docx,.txt"
-                    />
-                    <label
-                        htmlFor="file-upload"
-                        className={`w-full bg-white/50 border-[1.5px] border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-white/80 hover:border-green-800 hover:shadow-sm transition-all group ${isUploading ? 'opacity-75 pointer-events-none' : ''}`}
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full bg-white/50 border-[1.5px] border-dashed border-gray-300 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer hover:bg-white/80 hover:border-green-800 hover:shadow-sm transition-all group"
                     >
-                        {isUploading ? (
-                            <div className="flex flex-col items-center animate-pulse">
-                                <Loader2 className="w-8 h-8 text-green-800 animate-spin mb-3" />
-                                <h3 className="font-sans font-semibold text-gray-900 mb-1">Uploading...</h3>
-                                <p className="text-sm text-gray-500">Please wait while we process your file.</p>
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            onChange={handleFileUpload}
+                        />
+                        <div className="flex items-center gap-5">
+                            <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
+                                <CloudUpload className="w-6 h-6" />
                             </div>
                         ) : (
                             <div className="flex items-center gap-5">
@@ -165,14 +170,14 @@ const Knowledge = () => {
                             {/* Doc Item */}
                             <DocCard
                                 icon={<FileText className="w-5 h-5" />}
-                                title="Indian Labor Laws 2025"
+                                title="Indian Labor Laws 2024"
                                 meta="Updated 1 day ago • System"
                                 active={toggles['cal-labor']}
                                 onToggle={() => handleToggle('cal-labor')}
                             />
                             <DocCard
                                 icon={<FileText className="w-5 h-5" />}
-                                title="Bhartiya Nyay Sanhita (NDA) Summarized"
+                                title="Bhartiya Nyay Sanhita NDA summary"
                                 meta="Updated 1 day ago • System"
                                 active={toggles['nda-template']}
                                 onToggle={() => handleToggle('nda-template')}
@@ -210,53 +215,17 @@ const Knowledge = () => {
                         </div>
 
                         <div className="flex flex-col gap-3">
-                            {/* User Doc Item */}
-                            {extraDocs.map((doc) => (
+                            {userItems.map((item) => (
                                 <DocCard
-                                    key={doc.id}
+                                    key={item.id}
                                     icon={<FileCheck className="w-5 h-5" />}
-                                    title={doc.title}
-                                    meta={doc.meta}
-                                    isUser={doc.isUser}
-                                    active={doc.active}
-                                    onToggle={() => {
-                                        // Toggle logic for local items
-                                        setExtraDocs(prev => prev.map(d => d.id === doc.id ? { ...d, active: !d.active } : d));
-                                    }}
+                                    title={item.title}
+                                    meta={item.meta}
+                                    isUser={true}
+                                    active={toggles[item.id] || false}
+                                    onToggle={() => handleToggle(item.id)}
                                 />
                             ))}
-                            <DocCard
-                                icon={<FileCheck className="w-5 h-5" />}
-                                title="Internal Remote Work Policy"
-                                meta="Uploaded 5 hours ago"
-                                isUser={true}
-                                active={toggles['remote-policy']}
-                                onToggle={() => handleToggle('remote-policy')}
-                            />
-                            <DocCard
-                                icon={<FileCheck className="w-5 h-5" />}
-                                title="Q3 Sales Agreement_Final"
-                                meta="Updated 1 day ago"
-                                isUser={true}
-                                active={toggles['sales-agreement']}
-                                onToggle={() => handleToggle('sales-agreement')}
-                            />
-                            {/* <DocCard
-                                icon={<FileCheck className="w-5 h-5" />}
-                                title="Vendor Code of Conduct"
-                                meta="Uploaded 2 weeks ago"
-                                isUser={true}
-                                active={toggles['vendor-code']}
-                                onToggle={() => handleToggle('vendor-code')}
-                            />
-                            <DocCard
-                                icon={<FileCheck className="w-5 h-5" />}
-                                title="Old_Employment_v1.docx"
-                                meta="Uploaded 1 year ago"
-                                isUser={true}
-                                active={toggles['old-employment']}
-                                onToggle={() => handleToggle('old-employment')}
-                            /> */}
                         </div>
                     </section>
 

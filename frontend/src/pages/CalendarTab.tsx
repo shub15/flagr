@@ -50,7 +50,7 @@ const CalendarTab = () => {
             <section className="bg-white/60 backdrop-blur-md border border-white/90 rounded-2xl shadow-sm p-6 mb-8">
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex items-center gap-4">
-                        <h2 className="font-serif text-2xl text-black">October 2025</h2>
+                        <h2 className="font-serif text-2xl text-black">December 2025</h2>
                         <div className="flex bg-gray-100 rounded-full p-1">
                             <button className="p-1 hover:bg-white rounded-full transition-all"><ChevronLeft className="w-4 h-4" /></button>
                             <button className="p-1 hover:bg-white rounded-full transition-all"><ChevronRight className="w-4 h-4" /></button>

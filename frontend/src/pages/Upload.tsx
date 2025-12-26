@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { UploadCloud, FileText, X, ArrowRight, Sparkles, Info } from 'lucide-react';
+import { UploadCloud, FileText, X, ArrowRight, Sparkles, Info, HardDrive } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 function Upload() {
@@ -175,6 +175,15 @@ function Upload() {
                                 <p className="text-xs text-gray-400 mt-1">PDF only (Max 10MB)</p>
                             </div>
                         </div>
+
+                        {/* Import from Drive Button */}
+                        <button
+                            onClick={() => alert("Google Drive integration coming soon!")}
+                            className="w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-medium text-sm hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm flex items-center justify-center gap-2"
+                        >
+                            <HardDrive className="w-4 h-4" />
+                            Import from Drive
+                        </button>
 
                         {/* Error Message */}
                         {error && (
