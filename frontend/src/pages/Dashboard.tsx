@@ -476,10 +476,7 @@ const Dashboard = () => {
                                         <p className="text-xs text-gray-500 mt-1">Receive risk alerts in channels</p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={handleConnect}
-                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
-                                >
+                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
                                     Connect
                                 </button>
                             </div>
@@ -488,26 +485,18 @@ const Dashboard = () => {
                             <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between h-[180px]">
                                 <div className="flex items-start gap-4">
                                     <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center shrink-0">
-                                        <img
-                                            src="https://images.icon-icons.com/836/PNG/512/Trello_icon-icons.com_66775.png"
-                                            alt="Trello"
-                                            className="w-7 h-7"
-                                        />
+                                        <img src="https://images.icon-icons.com/836/PNG/512/Trello_icon-icons.com_66775.png" alt="Trello" className="w-7 h-7" />
                                     </div>
-
                                     <div>
                                         <h3 className="font-serif text-2xl text-black">Trello</h3>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Create cards from action items
-                                        </p>
+                                        <p className="text-xs text-gray-500 mt-1">Create cards from action items</p>
                                     </div>
                                 </div>
                                 <button className="w-full bg-white text-[#166534] border border-[#BBF7D0] text-2xl font-serif px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2">
                                     <Check className="w-6 h-6" />
-                                    <a href="https://trello.com/b/yjZMyk8g/orchid" target='_blank'>Connected</a>
+                                    <a href="https://trello.com/b/EOvdUB46/contracts" target='_blank'>Connected</a>
                                 </button>
                             </div>
-
 
                             {/* Adobe Acrobat */}
                             <div className="bg-white rounded-[24px] p-6 shadow-sm border border-gray-100 flex flex-col justify-between h-[180px]">
@@ -520,10 +509,7 @@ const Dashboard = () => {
                                         <p className="text-xs text-gray-500 mt-1">Import PDFs directly from cloud</p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={handleConnect}
-                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
-                                >
+                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
                                     Connect
                                 </button>
                             </div>
@@ -539,10 +525,7 @@ const Dashboard = () => {
                                         <p className="text-xs text-gray-500 mt-1">Sync contracts from folders</p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={handleConnect}
-                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
-                                >
+                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
                                     Connect
                                 </button>
                             </div>
@@ -558,10 +541,7 @@ const Dashboard = () => {
                                         <p className="text-xs text-gray-500 mt-1">Embed analysis into pages</p>
                                     </div>
                                 </div>
-                                <button
-                                    onClick={handleConnect}
-                                    className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
-                                >
+                                <button className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm">
                                     Connect
                                 </button>
                             </div>

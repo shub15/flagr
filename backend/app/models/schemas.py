@@ -260,11 +260,11 @@ class TranslationResponse(BaseModel):
 
 class TrelloSyncRequest(BaseModel):
     review_id: str
-    trello_api_key: str
-    trello_token: str
-    # trello_list_id: str
     trello_board_id: str
     filters: List[str] = ["CRITICAL", "MISSING"]
+    # Optional: if not provided, server uses its own env-configured credentials
+    trello_api_key: Optional[str] = None
+    trello_token: Optional[str] = None
 
 class ClauseComparison(BaseModel):
     """Single clause comparison for refinement."""

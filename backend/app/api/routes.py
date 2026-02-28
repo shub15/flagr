@@ -621,29 +621,95 @@ async def search_google(
     current_user: User = Depends(get_current_active_user)
 ):
     """
-    Search Google using Serper API.
+    Search using Serper API.
+    Accepts: { query: str, type: "news" | "cases" (default) }
     """
     try:
         search_query = query.get("query")
+        search_type = query.get("type", "cases")  # "news" or "cases"
+
         if not search_query:
-             raise HTTPException(status_code=400, detail="Query is required")
+            raise HTTPException(status_code=400, detail="Query is required")
+
+        if not settings.serper_api_key:
+            raise HTTPException(status_code=503, detail="Search is not configured (SERPER_API_KEY missing)")
 
         conn = http.client.HTTPSConnection("google.serper.dev")
+
+        # Route to /news for news requests, /search for legal case lookups
+        endpoint = "/news" if search_type == "news" else "/search"
+
         payload = json.dumps({
-          "q": search_query
+            "q": search_query,
+            "gl": "in",        # India jurisdiction
+            "hl": "en",
+            "num": 8,
         })
         headers = {
-          'X-API-KEY': settings.serper_api_key,
-          'Content-Type': 'application/json'
+            'X-API-KEY': settings.serper_api_key,
+            'Content-Type': 'application/json'
         }
-        conn.request("POST", "/search", payload, headers)
+        conn.request("POST", endpoint, payload, headers)
         res = conn.getresponse()
         data = res.read()
         return json.loads(data.decode("utf-8"))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Search failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
+@router.post("/summarize-search")
+async def summarize_search_results(
+    body: dict,
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    Summarize search results (court cases or news) using Gemini.
+    Accepts: { results: [...], contract_type: str, topic: str }
+    """
+    try:
+        results = body.get("results", [])
+        contract_type = body.get("contract_type", "employment")
+        topic = body.get("topic", "legal findings")
+
+        if not results:
+            raise HTTPException(status_code=400, detail="No results to summarize")
+
+        if not settings.google_api_key:
+            raise HTTPException(status_code=503, detail="AI summarization not configured")
+
+        # Build compact context from result titles + snippets (max 8 results)
+        results_text = "\n\n".join([
+            f"[{i+1}] {r.get('title', '')}\n{r.get('snippet', r.get('date', ''))}"
+            for i, r in enumerate(results[:8])
+        ])
+
+        prompt = (
+            f"You are a legal assistant helping a user understand their {contract_type} contract.\n\n"
+            f"The user searched for: \"{topic}\"\n\n"
+            f"Here are the search results (court cases / legal articles):\n{results_text}\n\n"
+            f"Write a concise 3-5 sentence summary in plain English that:\n"
+            f"1. Highlights the most relevant legal principles from these results\n"
+            f"2. Explains how they apply to a {contract_type} contract situation\n"
+            f"3. Gives the user a clear takeaway for their understanding\n\n"
+            f"Do NOT use markdown, bullet points or headers. Write as flowing prose."
+        )
+
+        import google.generativeai as genai
+        genai.configure(api_key=settings.google_api_key)
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = await model.generate_content_async(prompt)
+        summary = response.text.strip()
+
+        return {"summary": summary}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Summarize search failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Summarization failed: {str(e)}")
 
 
 @router.get("/reviews/{review_id}/council", response_model=CouncilTransparencyResponse)
@@ -1246,11 +1312,11 @@ async def refine_with_user_feedback(
                     db.add(RefinementFeedback(suggestion_id=s.id, user_id=current_user.id, action=f.action))
         db.commit()
     
-    # If no feedback provided, accept all suggestions by default
+    # If no feedback provided at all, apply nothing (safer default — user must explicitly accept)
     if not request or not request.feedback:
-        accepted_ids = [s.change_id for s in suggestions]
-        ignored_ids = []
-        logger.info(f"No feedback provided, accepting all {len(accepted_ids)} changes by default")
+        accepted_ids = []
+        ignored_ids = [s.change_id for s in suggestions]
+        logger.info(f"No feedback provided, ignoring all {len(ignored_ids)} changes (safe default)")
     else:
         accepted_ids = [f.change_id for f in request.feedback if f.action == "accept"]
         ignored_ids = [f.change_id for f in request.feedback if f.action == "ignore"]
@@ -1445,10 +1511,18 @@ async def sync_to_trello(
 ):
     """
     Export Critical and Missing findings to Trello Cards.
+    Falls back to server-configured Trello credentials if not provided in request.
     """
     review = db.query(ContractReview).filter(ContractReview.review_id == request.review_id).first()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
+
+    # Use request credentials or fall back to server env credentials
+    api_key = request.trello_api_key or settings.trello_api_key
+    token = request.trello_token or settings.trello_token_key
+
+    if not api_key or not token:
+        raise HTTPException(status_code=400, detail="Trello credentials not configured")
 
     from app.models.schemas import ReviewPoint, ReviewCategory
     all_points = []
@@ -1462,7 +1536,7 @@ async def sync_to_trello(
             legal_reference=db_point.legal_reference
         ))
 
-    trello = TrelloService(api_key=request.trello_api_key, token=request.trello_token)
+    trello = TrelloService(api_key=api_key, token=token)
 
     try:
         count = await trello.sync_findings_to_trello(
@@ -1472,7 +1546,7 @@ async def sync_to_trello(
         )
 
         return {"status": "success", "cards_created": count}
-    
+
     except Exception as e:
         logger.error(f"Trello sync failed: {e}")
         raise HTTPException(status_code=500, detail=f"Trello sync failed: {str(e)}")

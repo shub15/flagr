@@ -213,10 +213,6 @@ function Split() {
 
     // Translation State
     const [translation, setTranslation] = useState<{ text: string; lang: string } | null>(null);
-
-    // Council Data State
-    const [councilData, setCouncilData] = useState<CouncilTransparencyResponse | null>(null);
-    const [isCouncilLoading, setIsCouncilLoading] = useState(false);
     const [translating, setTranslating] = useState(false);
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
 
@@ -229,6 +225,13 @@ function Split() {
     const [isDownloading, setIsDownloading] = useState(false);
     // Track user decisions for each change_id
     const [decisions, setDecisions] = useState<Record<string, 'accepted' | 'rejected'>>({});
+
+    // Trello sync state
+    const [isTrelloSyncing, setIsTrelloSyncing] = useState(false);
+    const [trelloSyncMsg, setTrelloSyncMsg] = useState<{ text: string; ok: boolean } | null>(null);
+
+    // Summarize search state: index of message being summarized (-1 = none)
+    const [summarizingIdx, setSummarizingIdx] = useState<number>(-1);
 
     const handleDecision = (changeId: string, status: 'accepted' | 'rejected') => {
         setDecisions(prev => ({
@@ -333,14 +336,34 @@ function Split() {
         if (!currentReviewId) return;
         setIsDownloading(true);
         try {
-            // First apply feedback/refinements
-            await api.post(`/api/reviews/${currentReviewId}/refine-with-feedback`, { "refinement_mode": "balanced" });
+            const hasAccepts = Object.values(decisions).some(d => d === 'accepted');
+            const hasRejects = Object.values(decisions).some(d => d === 'rejected');
 
-            // Then download the PDF
+            // Determine mode:
+            // - Has accepts → opt-in: apply only explicitly accepted changes
+            // - Has only rejects → opt-out: apply everything except rejected
+            // - No decisions → safe default: ignore all
+            const feedback = (refinementData?.changes || []).map((change: any) => {
+                const decision = decisions[change.change_id];
+                let action: string;
+                if (hasAccepts) {
+                    action = decision === 'accepted' ? 'accept' : 'ignore';
+                } else if (hasRejects) {
+                    action = decision === 'rejected' ? 'ignore' : 'accept';
+                } else {
+                    action = 'ignore';
+                }
+                return { change_id: change.change_id, action };
+            });
+
+            await api.post(`/api/reviews/${currentReviewId}/refine-with-feedback`, {
+                refinement_mode: 'balanced',
+                feedback,
+            });
+
             window.open(`${config.apiBaseUrl}/api/reviews/${currentReviewId}/custom-refined-pdf`, '_blank');
         } catch (err) {
             console.error("Failed to download refined PDF", err);
-            // Optionally show error toast here
         } finally {
             setIsDownloading(false);
         }
@@ -353,6 +376,60 @@ function Split() {
         }
         const url = `${config.apiBaseUrl}/api/reviews/${currentReviewId}/annotated-pdf/redacted`;
         window.open(url, '_blank');
+    };
+
+    const handleAddToTrello = async () => {
+        if (!currentReviewId) return;
+        setIsTrelloSyncing(true);
+        setTrelloSyncMsg(null);
+        try {
+            const res = await api.post('/api/integrations/trello/sync', {
+                review_id: currentReviewId,
+                trello_board_id: '69a2def6a6a15b94f7d5b885',
+                filters: ['CRITICAL', 'MISSING'],
+            });
+            const count = res.data?.cards_created ?? 0;
+            setTrelloSyncMsg({
+                text: count > 0 ? `✓ ${count} card${count !== 1 ? 's' : ''} added to Trello!` : '✓ Synced (no new cards needed)',
+                ok: true,
+            });
+        } catch (err: any) {
+            const detail = err?.response?.data?.detail || 'Trello sync failed';
+            setTrelloSyncMsg({ text: `✗ ${detail}`, ok: false });
+        } finally {
+            setIsTrelloSyncing(false);
+        }
+    };
+
+    const handleSummarize = async (msgIdx: number, results: any[]) => {
+        if (summarizingIdx !== -1) return;
+        setSummarizingIdx(msgIdx);
+        try {
+            const contractType = reviewData?.contract_type || 'employment';
+            const topic = chatMessages[msgIdx]?.content || 'legal findings';
+            const res = await api.post('/api/summarize-search', {
+                results,
+                contract_type: contractType,
+                topic,
+            });
+            const summary = res.data?.summary || 'No summary available.';
+            setChatMessages(prev => [
+                ...prev,
+                {
+                    role: 'assistant',
+                    content: `📋 **AI Summary**\n\n${summary}`,
+                    suggestions: ['What does this mean for my contract?', 'Find latest past cases related to this', 'Explain this legal term in simple English'],
+                }
+            ]);
+        } catch (err: any) {
+            const detail = err?.response?.data?.detail || 'Summarization failed';
+            setChatMessages(prev => [
+                ...prev,
+                { role: 'assistant', content: `Could not summarize: ${detail}` }
+            ]);
+        } finally {
+            setSummarizingIdx(-1);
+        }
     };
 
     const handleTranslate = async (lang: string) => {
@@ -479,21 +556,52 @@ function Split() {
             let newMsg: ChatMessage | null = null;
 
             if (messageText === "Fetch latest news on this topic" || messageText === "Find latest past cases related to this") {
-                const query = messageText === "Fetch latest news on this topic" ? "latest law news" : "latest law cases";
+                const contractType = reviewData?.contract_type || 'employment';
+
+                // Extract key issue keywords from the top critical/missing findings
+                const topIssues = [
+                    ...(reviewData?.critical_points || []),
+                    ...(reviewData?.missing_points || []),
+                ].slice(0, 3).map((p: any) => {
+                    // Grab first 4 words of advice as a keyword phrase
+                    return p.advice?.split(' ').slice(0, 4).join(' ') || '';
+                }).filter(Boolean);
+
+                const isCases = messageText.includes("cases");
+                let searchQuery: string;
+
+                if (isCases) {
+                    // Build a targeted legal case query
+                    const issueKeywords = topIssues.length
+                        ? topIssues.slice(0, 2).join(' ')
+                        : `${contractType} labour rights`;
+                    searchQuery = `India court cases "${contractType} contract" ${issueKeywords} site:indiankanoon.org OR site:livelaw.in OR site:barandbench.com`;
+                } else {
+                    // Build a targeted news query
+                    const issueKeywords = topIssues.length
+                        ? topIssues[0]
+                        : `${contractType} contract law`;
+                    searchQuery = `India "${contractType} contract" ${issueKeywords} law news 2024 OR 2025`;
+                }
+
                 const response = await api.post('/api/search', {
-                    query: query
+                    query: searchQuery,
+                    type: isCases ? 'cases' : 'news',
                 });
 
-                if (response.data.organic) {
-                    replyText = `Here are the latest ${messageText.includes("news") ? "news" : "cases"} I found:`;
+                const results = response.data.organic || response.data.news || [];
+                if (results.length > 0) {
+                    replyText = isCases
+                        ? `Here are relevant Indian court cases for your **${contractType}** contract:`
+                        : `Here's the latest legal news relevant to your **${contractType}** contract:`;
                     newMsg = {
                         role: 'assistant',
                         content: replyText,
-                        searchResults: response.data.organic,
+                        searchResults: results,
                         suggestions: SUGGESTED_BACKUPS.slice(0, 3)
                     };
                 } else {
-                    replyText = "I couldn't find any relevant results at the moment.";
+                    replyText = "I couldn't find relevant results. Try asking a specific question about your contract instead.";
                     newMsg = {
                         role: 'assistant',
                         content: replyText,
@@ -715,35 +823,6 @@ function Split() {
             negotiable: { bg: 'bg-[#EFF6FF]', text: 'text-[#1E40AF]', border: 'border-[#DBEAFE]', leftBar: 'bg-[#DBEAFE]' }
         };
         return colors[category as keyof typeof colors] || colors.critical;
-    };
-
-    const getAgentStyle = (agentName: string) => {
-        const name = agentName.toLowerCase();
-        if (name.includes('risk') || name.includes('skeptic')) {
-            return {
-                label: 'Agent Risk',
-                icon: <ShieldAlert className="w-3 h-3 text-[#BE123C]" />,
-                colors: { bg: 'bg-[#FFF1F2]', border: 'border-[#FECDD3]', iconBg: 'bg-white', text: 'text-[#881337]', iconColor: 'text-[#9F1239]' }
-            };
-        } else if (name.includes('finance') || name.includes('auditor') || name.includes('compliance')) {
-            return {
-                label: 'Agent Compliance',
-                icon: <Coins className="w-3 h-3 text-[#15803D]" />,
-                colors: { bg: 'bg-[#F0FDF4]', border: 'border-[#BBF7D0]', iconBg: 'bg-white', text: 'text-[#14532D]', iconColor: 'text-[#15803D]' }
-            };
-        } else if (name.includes('strategy') || name.includes('strategist')) {
-            return {
-                label: 'Agent Strategy',
-                icon: <Lightbulb className="w-3 h-3 text-[#1D4ED8]" />,
-                colors: { bg: 'bg-[#EFF6FF]', border: 'border-[#BFDBFE]', iconBg: 'bg-white', text: 'text-[#1E3A8A]', iconColor: 'text-[#2563EB]' }
-            };
-        }
-        // Default
-        return {
-            label: `Agent ${agentName.charAt(0).toUpperCase() + agentName.slice(1)}`,
-            icon: <Info className="w-3 h-3 text-gray-500" />,
-            colors: { bg: 'bg-gray-50', border: 'border-gray-200', iconBg: 'bg-white', text: 'text-gray-700', iconColor: 'text-gray-500' }
-        };
     };
 
     const renderStepIcon = (step: Step, index: number) => {
@@ -1263,11 +1342,26 @@ function Split() {
                                         )}
 
                                         {/* Add to Trello Button */}
-                                        {activeTab === 'negotiable' && getActiveFindings().length > 0 && (
-                                            <button className="w-full bg-[#0079BF] hover:bg-[#026AA7] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md mt-4">
-                                                <Trello className="w-4 h-4" />
-                                                Add to Trello
-                                            </button>
+                                        {(activeTab === 'critical' || activeTab === 'missing') && getActiveFindings().length > 0 && (
+                                            <div className="mt-4">
+                                                <button
+                                                    onClick={handleAddToTrello}
+                                                    disabled={isTrelloSyncing}
+                                                    className="w-full bg-[#0079BF] hover:bg-[#026AA7] disabled:opacity-60 text-white py-3 rounded-xl flex items-center justify-center gap-2 font-medium transition-all shadow-sm hover:shadow-md"
+                                                >
+                                                    {isTrelloSyncing ? (
+                                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                    ) : (
+                                                        <Trello className="w-4 h-4" />
+                                                    )}
+                                                    {isTrelloSyncing ? 'Syncing...' : 'Add to Trello'}
+                                                </button>
+                                                {trelloSyncMsg && (
+                                                    <p className={`text-xs mt-2 text-center font-medium ${trelloSyncMsg.ok ? 'text-green-600' : 'text-red-500'}`}>
+                                                        {trelloSyncMsg.text}
+                                                    </p>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
@@ -1428,6 +1522,25 @@ function Split() {
                                                                 )}
                                                             </a>
                                                         ))}
+
+                                                        {/* Summarize Button */}
+                                                        <button
+                                                            onClick={() => handleSummarize(idx, msg.searchResults!)}
+                                                            disabled={summarizingIdx !== -1}
+                                                            className="w-full mt-2 flex items-center justify-center gap-2 py-2.5 px-4 bg-[#064E3B] hover:bg-[#065F46] disabled:opacity-50 text-white text-xs font-semibold rounded-xl transition-all shadow-sm"
+                                                        >
+                                                            {summarizingIdx === idx ? (
+                                                                <>
+                                                                    <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                                                    Summarizing...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                                                                    Summarize with AI
+                                                                </>
+                                                            )}
+                                                        </button>
                                                     </div>
                                                 )}
 
