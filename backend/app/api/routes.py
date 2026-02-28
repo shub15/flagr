@@ -613,6 +613,113 @@ async def ask_contract_question(
         )
 
 
+@router.post("/reviews/{review_id}/correct")
+async def correct_agent_finding(
+    review_id: str,
+    body: dict,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Apply a natural-language correction to the agent's findings.
+    The user explains what's wrong and the AI determines which points to remove/downgrade.
+    Returns the updated review data.
+    """
+    correction_text = body.get("correction", "").strip()
+    if not correction_text:
+        raise HTTPException(status_code=400, detail="Correction text is required")
+
+    review = db.query(ContractReview).filter(
+        ContractReview.review_id == review_id,
+        ContractReview.user_id == current_user.id
+    ).first()
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    from app.config import settings as cfg
+    if not cfg.google_api_key:
+        raise HTTPException(status_code=503, detail="AI correction not configured")
+
+    # Build context of all current findings for Gemini to reason about
+    all_points = review.review_points
+    points_summary = "\n".join([
+        f"[{i}] ({p.category.name}) {p.advice[:120]}"
+        for i, p in enumerate(all_points)
+    ])
+
+    prompt = (
+        f"You are reviewing agent findings for a {review.contract_type} contract.\n\n"
+        f"Current findings (index + category + advice):\n{points_summary}\n\n"
+        f"The user says: \"{correction_text}\"\n\n"
+        f"Based on the correction, respond with a JSON object:\n"
+        f'{{"action": "remove" | "downgrade", "indices": [list of finding indices to affect], "reason": "brief reason"}}\n'
+        f"Only include indices the user's correction clearly refers to. "
+        f"If nothing should change, return {{}}"
+    )
+
+    try:
+        import google.generativeai as genai
+        import json as json_lib
+        genai.configure(api_key=cfg.google_api_key)
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        resp = await model.generate_content_async(prompt)
+        raw = resp.text.strip().strip("```json").strip("```").strip()
+        parsed = json_lib.loads(raw) if raw and raw != "{}" else {}
+    except Exception as e:
+        logger.warning(f"Gemini correction parse failed: {e}. Raw: {raw if 'raw' in dir() else ''}")
+        parsed = {}
+
+    action = parsed.get("action")
+    indices = parsed.get("indices", [])
+    reason = parsed.get("reason", "User correction applied")
+
+    removed_count = 0
+    if action == "remove" and indices:
+        for idx in sorted(indices, reverse=True):
+            if 0 <= idx < len(all_points):
+                point = all_points[idx]
+                db.delete(point)
+                removed_count += 1
+        db.commit()
+        logger.info(f"Correction on {review_id}: removed {removed_count} points. Reason: {reason}")
+    elif action == "downgrade" and indices:
+        from app.models.database import ReviewCategoryDB
+        for idx in indices:
+            if 0 <= idx < len(all_points):
+                point = all_points[idx]
+                # Downgrade: CRITICAL → NEGOTIABLE, MISSING → NEGOTIABLE
+                if point.category.name in ("CRITICAL", "MISSING"):
+                    point.category = ReviewCategoryDB.NEGOTIABLE
+        db.commit()
+        logger.info(f"Correction on {review_id}: downgraded {len(indices)} points. Reason: {reason}")
+
+    # Re-fetch updated review to return fresh data
+    db.refresh(review)
+
+    # Re-build the full review response structure
+    from app.models.schemas import ReviewPoint as RPSchema, ReviewCategory as RCSchema
+    def to_schema_point(p):
+        return {
+            "category": p.category.name,
+            "quote": p.quote,
+            "advice": p.advice,
+            "agent_source": p.agent_source,
+            "confidence": p.confidence,
+            "legal_reference": p.legal_reference,
+        }
+
+    updated_points = [p for p in review.review_points]
+    return {
+        "review_id": review_id,
+        "critical_points":   [to_schema_point(p) for p in updated_points if p.category.name == "CRITICAL"],
+        "good_points":       [to_schema_point(p) for p in updated_points if p.category.name == "GOOD"],
+        "missing_points":    [to_schema_point(p) for p in updated_points if p.category.name == "MISSING"],
+        "negotiable_points": [to_schema_point(p) for p in updated_points if p.category.name == "NEGOTIABLE"],
+        "correction_applied": action or "none",
+        "affected_count": removed_count if action == "remove" else len(indices) if action else 0,
+        "reason": reason,
+    }
+
 from app.config import settings
 
 @router.post("/search")

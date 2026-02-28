@@ -233,6 +233,10 @@ function Split() {
     // Summarize search state: index of message being summarized (-1 = none)
     const [summarizingIdx, setSummarizingIdx] = useState<number>(-1);
 
+    // Correction state
+    const [isCorrecting, setIsCorrecting] = useState(false);
+    const [correctionResult, setCorrectionResult] = useState<{ ok: boolean; text: string } | null>(null);
+
     const handleDecision = (changeId: string, status: 'accepted' | 'rejected') => {
         setDecisions(prev => ({
             ...prev,
@@ -1196,20 +1200,67 @@ function Split() {
                                                 <textarea
                                                     className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:border-black focus:outline-none"
                                                     rows={3}
-                                                    placeholder="Type your correction..."
+                                                    placeholder="Describe what's wrong, e.g. 'Expense reimbursement is not standard for Indian internships, remove it from critical'"
                                                     value={correctionText}
                                                     onChange={(e) => setCorrectionText(e.target.value)}
                                                 />
-                                                <button
-                                                    onClick={() => {
-                                                        console.log('Send correction:', correctionText);
-                                                        setCorrectionText('');
-                                                        setShowCorrectionInput(false);
-                                                    }}
-                                                    className="bg-[#166534] text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#14532d] transition-all"
-                                                >
-                                                    Send
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <button
+                                                        disabled={isCorrecting || !correctionText.trim()}
+                                                        onClick={async () => {
+                                                            if (!currentReviewId || !correctionText.trim()) return;
+                                                            setIsCorrecting(true);
+                                                            setCorrectionResult(null);
+                                                            try {
+                                                                const res = await api.post(
+                                                                    `/api/reviews/${currentReviewId}/correct`,
+                                                                    { correction: correctionText }
+                                                                );
+                                                                // Merge updated findings into reviewData live
+                                                                setReviewData((prev: any) => ({
+                                                                    ...prev,
+                                                                    critical_points:   res.data.critical_points,
+                                                                    good_points:       res.data.good_points,
+                                                                    missing_points:    res.data.missing_points,
+                                                                    negotiable_points: res.data.negotiable_points,
+                                                                }));
+                                                                const count = res.data.affected_count ?? 0;
+                                                                setCorrectionResult({
+                                                                    ok: true,
+                                                                    text: count > 0
+                                                                        ? `✓ ${count} finding${count !== 1 ? 's' : ''} ${res.data.correction_applied}d`
+                                                                        : '✓ No matching findings to change',
+                                                                });
+                                                                setCorrectionText('');
+                                                                setTimeout(() => {
+                                                                    setShowCorrectionInput(false);
+                                                                    setCorrectionResult(null);
+                                                                }, 2500);
+                                                            } catch (err: any) {
+                                                                const detail = err?.response?.data?.detail || 'Correction failed';
+                                                                setCorrectionResult({ ok: false, text: `✗ ${detail}` });
+                                                            } finally {
+                                                                setIsCorrecting(false);
+                                                            }
+                                                        }}
+                                                        className="bg-[#166534] disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-[#14532d] transition-all flex items-center gap-2"
+                                                    >
+                                                        {isCorrecting ? (
+                                                            <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> Applying...</>
+                                                        ) : 'Send'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => { setShowCorrectionInput(false); setCorrectionResult(null); }}
+                                                        className="text-xs text-gray-400 hover:text-gray-600"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                </div>
+                                                {correctionResult && (
+                                                    <p className={`text-xs font-medium ${correctionResult.ok ? 'text-green-600' : 'text-red-500'}`}>
+                                                        {correctionResult.text}
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
                                     </div>
