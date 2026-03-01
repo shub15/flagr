@@ -568,10 +568,12 @@ async def ask_contract_question(
     - "Is the vendor liable for delays?"
     - "Can I work remotely?"
     - "What happens if I get terminated?"
+    - "Explain this legal term in simple English" (general knowledge)
+    - "Is this standard market practice?" (general knowledge)
     
     Returns:
-    - AI-generated answer based on contract text
-    - Supporting quotes from the contract
+    - AI-generated answer based on contract text (or general knowledge if applicable)
+    - Supporting quotes from the contract (if available)
     - Confidence score and answerability flag
     """
     try:
@@ -590,15 +592,20 @@ async def ask_contract_question(
         # Answer question using QA service
         from app.services.contract_qa_service import contract_qa_service
         
+        # Check if this is a general knowledge question
+        is_general_knowledge = request.is_general_knowledge if hasattr(request, 'is_general_knowledge') else False
+        
         answer = await contract_qa_service.answer_question(
             contract_text=review.contract_text,
             question=request.question,
-            contract_type=review.contract_type
+            contract_type=review.contract_type,
+            is_general_knowledge=is_general_knowledge
         )
         
         logger.info(
             f"Answered Q&A for review {review_id}: '{request.question}' "
-            f"(answerable={answer.answerable}, confidence={answer.confidence:.2f})"
+            f"(answerable={answer.answerable}, confidence={answer.confidence:.2f}, "
+            f"general_knowledge={is_general_knowledge})"
         )
         
         return answer
@@ -624,6 +631,13 @@ async def search_google(
     Search Google using Serper API.
     """
     try:
+        # Check if API key is configured
+        if not settings.serper_api_key:
+            raise HTTPException(
+                status_code=503,
+                detail="Search API is not configured. Please contact administrator."
+            )
+        
         search_query = query.get("query")
         if not search_query:
              raise HTTPException(status_code=400, detail="Query is required")
@@ -640,6 +654,8 @@ async def search_google(
         res = conn.getresponse()
         data = res.read()
         return json.loads(data.decode("utf-8"))
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Search failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

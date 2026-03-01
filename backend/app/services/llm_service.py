@@ -78,7 +78,15 @@ class GeminiClient(BaseLLMClient):
     
     def __init__(self):
         genai.configure(api_key=settings.google_api_key)
-        self.model = genai.GenerativeModel(settings.gemini_model)
+        configured_model = (settings.gemini_model or "").strip()
+        self.candidate_models = [
+            configured_model,
+            "gemini-2.5-flash",
+            "gemini-2.0-flash",
+            "gemini-flash-latest",
+            "gemini-3-flash-preview",
+            "gemini-pro-latest",
+        ]
     
     @property
     def provider_name(self) -> str:
@@ -88,23 +96,37 @@ class GeminiClient(BaseLLMClient):
         """Generate response from Gemini."""
         try:
             full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-            
+            last_error = "unknown error"
+
             # Gemini doesn't have native async, so we run in executor
             loop = asyncio.get_event_loop()
-            response = await asyncio.wait_for(
-                loop.run_in_executor(
-                    None,
-                    lambda: self.model.generate_content(full_prompt)
-                ),
-                timeout=settings.llm_timeout_seconds
-            )
-            
-            return {
-                "success": True,
-                "content": response.text,
-                "provider": self.provider_name,
-                "model": settings.gemini_model
-            }
+
+            for model_name in self.candidate_models:
+                if not model_name:
+                    continue
+                try:
+                    model = genai.GenerativeModel(model_name)
+                    response = await asyncio.wait_for(
+                        loop.run_in_executor(
+                            None,
+                            lambda: model.generate_content(full_prompt)
+                        ),
+                        timeout=settings.llm_timeout_seconds
+                    )
+                    return {
+                        "success": True,
+                        "content": response.text,
+                        "provider": self.provider_name,
+                        "model": model_name
+                    }
+                except Exception as model_error:
+                    last_error = str(model_error)
+                    if "404" in last_error or "not found" in last_error.lower() or "not supported" in last_error.lower():
+                        logger.warning(f"{self.provider_name} model '{model_name}' unavailable, trying next fallback")
+                        continue
+                    raise
+
+            return {"success": False, "error": last_error, "provider": self.provider_name}
         except asyncio.TimeoutError:
             logger.error(f"{self.provider_name} request timed out")
             return {"success": False, "error": "timeout", "provider": self.provider_name}

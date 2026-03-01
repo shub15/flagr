@@ -201,15 +201,12 @@ function Split() {
 
     // Review data from API
     const [reviewData, setReviewData] = useState<any>(null);
-    const [councilData, setCouncilData] = useState<AgentCouncilResponse[] | null>(null);
-    const [isCouncilLoading, setIsCouncilLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'critical' | 'good' | 'missing' | 'negotiable'>('critical');
 
     const [rightPanelTab, setRightPanelTab] = useState<'analysis' | 'chat' | 'refine'>('analysis');
     const [showCorrectionInput, setShowCorrectionInput] = useState(false);
 
     const [correctionText, setCorrectionText] = useState('');
-
 
     // Translation State
     const [translation, setTranslation] = useState<{ text: string; lang: string } | null>(null);
@@ -478,29 +475,70 @@ function Split() {
             let replyText = "";
             let newMsg: ChatMessage | null = null;
 
+            // Handle search-based suggestions
             if (messageText === "Fetch latest news on this topic" || messageText === "Find latest past cases related to this") {
                 const query = messageText === "Fetch latest news on this topic" ? "latest law news" : "latest law cases";
-                const response = await api.post('/api/search', {
-                    query: query
-                });
+                try {
+                    const response = await api.post('/api/search', {
+                        query: query
+                    });
 
-                if (response.data.organic) {
-                    replyText = `Here are the latest ${messageText.includes("news") ? "news" : "cases"} I found:`;
-                    newMsg = {
-                        role: 'assistant',
-                        content: replyText,
-                        searchResults: response.data.organic,
-                        suggestions: SUGGESTED_BACKUPS.slice(0, 3)
-                    };
-                } else {
-                    replyText = "I couldn't find any relevant results at the moment.";
+                    if (response.data.organic) {
+                        replyText = `Here are the latest ${messageText.includes("news") ? "news" : "cases"} I found:`;
+                        newMsg = {
+                            role: 'assistant',
+                            content: replyText,
+                            searchResults: response.data.organic,
+                            suggestions: SUGGESTED_BACKUPS.slice(0, 3)
+                        };
+                    } else {
+                        replyText = "I couldn't find any relevant results at the moment.";
+                        newMsg = {
+                            role: 'assistant',
+                            content: replyText,
+                            suggestions: SUGGESTED_BACKUPS.slice(0, 3)
+                        };
+                    }
+                } catch (searchError) {
+                    if (!currentReviewId) throw new Error("No review ID");
+                    const fallbackQuestion = messageText === "Fetch latest news on this topic"
+                        ? "Summarize recent legal news trends relevant to employment contracts in simple terms."
+                        : "Explain recent legal case trends relevant to employment contracts in simple terms.";
+
+                    const fallbackResponse = await api.post(`/api/reviews/${currentReviewId}/ask`, {
+                        question: fallbackQuestion,
+                        is_general_knowledge: true
+                    });
+
+                    replyText = fallbackResponse.data.answer;
                     newMsg = {
                         role: 'assistant',
                         content: replyText,
                         suggestions: SUGGESTED_BACKUPS.slice(0, 3)
                     };
                 }
-            } else {
+            } 
+            // Handle knowledge-based suggestions (don't use contract context)
+            else if (messageText === "Is this standard market practice?" || messageText === "Explain this legal term in simple English") {
+                // For these, we ask a general question, not contract Q&A
+                // Send to general knowledge endpoint or use a different prompt
+                if (!currentReviewId) throw new Error("No review ID");
+
+                const response = await api.post(`/api/reviews/${currentReviewId}/ask`, {
+                    question: messageText,
+                    is_general_knowledge: true  // Flag to tell backend not to use contract context
+                });
+
+                const selectedSuggestions = SUGGESTED_BACKUPS.slice(0, 3);
+                replyText = response.data.answer;
+                newMsg = {
+                    role: 'assistant',
+                    content: replyText,
+                    suggestions: selectedSuggestions
+                };
+            }
+            // Handle regular contract questions
+            else {
                 if (!currentReviewId) throw new Error("No review ID");
 
                 const response = await api.post(`/api/reviews/${currentReviewId}/ask`, {

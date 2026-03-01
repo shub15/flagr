@@ -42,6 +42,30 @@ Important:
 - Confidence should reflect how certain you are about the answer
 """
     
+    def _get_general_knowledge_prompt(self) -> str:
+        """Get system prompt for general legal knowledge questions."""
+        return """You are a legal expert and business advisor. Your task is to answer general questions about legal terms, market practices, and business norms.
+
+Rules:
+1. Answer based on general legal knowledge, not specific contract text
+2. Be accurate and cite common legal standards when relevant
+3. If asking about "standard practices", reference industry norms
+4. For legal terminology, explain clearly in simple English
+5. Use clear, non-technical language whenever possible
+
+Output Format (JSON):
+{
+  "answer": "Direct, informative answer",
+  "quotes": [],
+  "answerable": true,
+  "confidence": 0.85
+}
+
+Important:
+- This is general knowledge, so quotes should typically be empty
+- Confidence reflects how certain you are about the general principle
+"""
+    
     def _build_qa_prompt(
         self, 
         contract_text: str, 
@@ -57,6 +81,13 @@ CONTRACT:
 QUESTION: {question}
 
 Analyze the contract and answer the question. Provide supporting quotes from the exact contract text.
+Output ONLY the JSON response. No other text."""
+    
+    def _build_general_knowledge_prompt(self, question: str) -> str:
+        """Build prompt for general knowledge questions."""
+        return f"""QUESTION: {question}
+
+Answer this legal or business-related question based on general knowledge and standard practices.
 Output ONLY the JSON response. No other text."""
     
     def _parse_llm_response(self, response: str) -> Dict[str, Any]:
@@ -114,7 +145,8 @@ Output ONLY the JSON response. No other text."""
         self,
         contract_text: str,
         question: str,
-        contract_type: str = "employment"
+        contract_type: str = "employment",
+        is_general_knowledge: bool = False
     ) -> ContractAnswerResponse:
         """
         Answer a question about the contract using LLM.
@@ -123,21 +155,28 @@ Output ONLY the JSON response. No other text."""
             contract_text: Full contract text
             question: User's question
             contract_type: Type of contract
+            is_general_knowledge: If True, answer based on general knowledge not contract
         
         Returns:
             ContractAnswerResponse with answer and supporting quotes
         """
-        logger.info(f"Answering Q&A question: '{question}' (contract type: {contract_type})")
+        logger.info(f"Answering question: '{question}' (contract type: {contract_type}, general_knowledge={is_general_knowledge})")
         
         try:
-            # Build prompts
-            system_prompt = self._get_system_prompt()
-            user_prompt = self._build_qa_prompt(contract_text, question, contract_type)
-            
             # Query Gemini directly (use Gemini for Q&A)
             from app.services.llm_service import GeminiClient
             
             gemini = GeminiClient()
+            
+            if is_general_knowledge:
+                # Answer based on general knowledge, not contract context
+                system_prompt = self._get_general_knowledge_prompt()
+                user_prompt = self._build_general_knowledge_prompt(question)
+            else:
+                # Answer based on contract text
+                system_prompt = self._get_system_prompt()
+                user_prompt = self._build_qa_prompt(contract_text, question, contract_type)
+            
             response_dict = await gemini.generate(
                 prompt=user_prompt,
                 system_prompt=system_prompt

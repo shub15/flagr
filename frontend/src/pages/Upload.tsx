@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UploadCloud, FileText, X, ArrowRight, Sparkles, Info, HardDrive } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { pickPdfFromGoogleDrive } from '../services/driveService';
 
 function Upload() {
     const [currentStep, setCurrentStep] = useState(1);
@@ -8,6 +9,7 @@ function Upload() {
     const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [context, setContext] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [isDriveImporting, setIsDriveImporting] = useState(false);
 
     const purposeOptions = [
         {
@@ -52,6 +54,30 @@ function Upload() {
             }
             setUploadedFile(file);
             setError(null);
+        }
+    };
+
+    const handleDriveImport = async () => {
+        try {
+            setIsDriveImporting(true);
+            setError(null);
+            const driveFile = await pickPdfFromGoogleDrive();
+            if (driveFile.type !== 'application/pdf') {
+                setError('Only PDF files are supported for now.');
+                return;
+            }
+            if (driveFile.size > 10 * 1024 * 1024) {
+                setError('File size must be less than 10MB');
+                return;
+            }
+            setUploadedFile(driveFile);
+        } catch (driveError: any) {
+            if (driveError?.message && driveError.message.includes('canceled')) {
+                return;
+            }
+            setError(driveError?.message || 'Failed to import from Google Drive.');
+        } finally {
+            setIsDriveImporting(false);
         }
     };
 
@@ -178,11 +204,12 @@ function Upload() {
 
                         {/* Import from Drive Button */}
                         <button
-                            onClick={() => alert("Google Drive integration coming soon!")}
+                            onClick={handleDriveImport}
+                            disabled={isDriveImporting}
                             className="w-full bg-white border border-gray-200 text-gray-700 py-3 rounded-xl font-medium text-sm hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm flex items-center justify-center gap-2"
                         >
                             <HardDrive className="w-4 h-4" />
-                            Import from Drive
+                            {isDriveImporting ? 'Importing from Drive...' : 'Import from Drive'}
                         </button>
 
                         {/* Error Message */}

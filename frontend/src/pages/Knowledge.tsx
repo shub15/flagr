@@ -134,18 +134,12 @@ const Knowledge = () => {
                             <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
                                 <CloudUpload className="w-6 h-6" />
                             </div>
-                        ) : (
-                            <div className="flex items-center gap-5">
-                                <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform">
-                                    <CloudUpload className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-sans font-semibold text-gray-900 mb-1">Upload New Knowledge</h3>
-                                    <p className="text-sm text-gray-500">Drag & drop PDF or DOCX files here, or <span className="text-green-800 underline font-medium">browse files</span></p>
-                                </div>
+                            <div>
+                                <h3 className="font-sans font-semibold text-gray-900 mb-1">Upload New Knowledge</h3>
+                                <p className="text-sm text-gray-500">Drag & drop PDF or DOCX files here, or <span className="text-green-800 underline font-medium">browse files</span></p>
                             </div>
-                        )}
-                    </label>
+                        </div>
+                    </div>
                 </section>
 
                 {/* Grid Layout */}

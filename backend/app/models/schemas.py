@@ -159,6 +159,10 @@ class ContractQuestionRequest(BaseModel):
         max_length=500, 
         description="Question about the contract"
     )
+    is_general_knowledge: bool = Field(
+        False,
+        description="If True, answer based on general legal knowledge instead of contract text"
+    )
 
 
 class ContractQuote(BaseModel):

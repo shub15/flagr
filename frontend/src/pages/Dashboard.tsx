@@ -22,6 +22,7 @@ import {
 import api from '../services/api';
 import CalendarTab from './CalendarTab';
 import { useAuth } from '../contexts/AuthContext';
+import { connectGoogleDrive, disconnectGoogleDrive, isGoogleDriveConnected } from '../services/driveService';
 
 interface Review {
     review_id: string;
@@ -48,6 +49,8 @@ const Dashboard = () => {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loadingReviews, setLoadingReviews] = useState(true);
     const [reviewsError, setReviewsError] = useState<string | null>(null);
+    const [isDriveConnected, setIsDriveConnected] = useState(isGoogleDriveConnected());
+    const [isDriveConnecting, setIsDriveConnecting] = useState(false);
 
     // Fetch reviews on component mount
     useEffect(() => {
@@ -95,17 +98,22 @@ const Dashboard = () => {
         navigate(`/split/${reviewId}`);
     };
 
-    const handleConnect = () => {
-        const width = 500;
-        const height = 600;
-        const left = window.screen.width / 2 - width / 2;
-        const top = window.screen.height / 2 - height / 2;
-
-        window.open(
-            'https://myaccount.google.com/',
-            'Google Sign In',
-            `width=${width},height=${height},top=${top},left=${left}`
-        );
+    const handleGoogleDriveConnect = async () => {
+        try {
+            setIsDriveConnecting(true);
+            if (isDriveConnected) {
+                disconnectGoogleDrive();
+                setIsDriveConnected(false);
+                return;
+            }
+            await connectGoogleDrive();
+            setIsDriveConnected(true);
+        } catch (error) {
+            console.error('Google Drive connect failed:', error);
+            alert('Google Drive connection failed. Please check client ID/API key setup.');
+        } finally {
+            setIsDriveConnecting(false);
+        }
     };
 
     return (
@@ -457,11 +465,12 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={handleConnect}
-                                    className="w-full bg-white text-[#166534] border border-[#BBF7D0] text-2xl font-serif px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors"
+                                    onClick={handleGoogleDriveConnect}
+                                    disabled={isDriveConnecting}
+                                    className={`w-full text-2xl font-serif px-5 py-2.5 rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors ${isDriveConnected ? 'bg-white text-[#166534] border border-[#BBF7D0] hover:bg-gray-50' : 'bg-[#000] text-white hover:bg-[#14532d]'}`}
                                 >
-                                    <Check className="w-6 h-6" />
-                                    Connected
+                                    {isDriveConnected ? <Check className="w-6 h-6" /> : null}
+                                    {isDriveConnecting ? 'Connecting...' : isDriveConnected ? 'Connected' : 'Connect'}
                                 </button>
                             </div>
 
@@ -477,7 +486,7 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={handleConnect}
+                                    onClick={() => alert('Slack integration coming soon!')}
                                     className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
                                 >
                                     Connect
@@ -521,7 +530,7 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={handleConnect}
+                                    onClick={() => alert('Adobe integration coming soon!')}
                                     className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
                                 >
                                     Connect
@@ -540,7 +549,7 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={handleConnect}
+                                    onClick={() => alert('Dropbox integration coming soon!')}
                                     className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
                                 >
                                     Connect
@@ -559,7 +568,7 @@ const Dashboard = () => {
                                     </div>
                                 </div>
                                 <button
-                                    onClick={handleConnect}
+                                    onClick={() => alert('Notion integration coming soon!')}
                                     className="w-full bg-[#000] text-white text-2xl font-serif px-5 py-2.5 rounded-xl hover:bg-[#14532d] transition-all shadow-sm"
                                 >
                                     Connect
