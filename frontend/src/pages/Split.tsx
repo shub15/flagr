@@ -369,7 +369,7 @@ function Split() {
 
     const handleShare = () => {
         if (!currentReviewId) {
-            setApiError('No review id available for share');
+            setApiError();
             return;
         }
         const url = `${config.apiBaseUrl}/api/reviews/${currentReviewId}/annotated-pdf/redacted`;
