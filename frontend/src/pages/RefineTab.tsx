@@ -1,4 +1,3 @@
-import React from 'react';
 import { Info, Check, Download } from 'lucide-react';
 
 interface RefineTabProps {
