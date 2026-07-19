@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useParams, useNavigate } from 'react-router-dom';
+import { useLocation, useParams} from 'react-router-dom';
 import {
     Check,
     ShieldAlert,
     Coins,
     Plus,
-    Info,
     Sparkles,
     CornerDownLeft,
     Share2,
@@ -54,11 +53,6 @@ interface AgentCouncilResponse {
     summary: string;
     total_findings: number;
     final_findings: number;
-}
-
-interface CouncilTransparencyResponse {
-    review_id: string;
-    agents: AgentCouncilResponse[];
 }
 
 const RefinementCard = ({ change, status, onDecision }: {
@@ -1741,6 +1735,6 @@ function Split() {
 
 export default Split;
 
-function setApiError(arg0: string) {
+function setApiError() {
     throw new Error('Function not implemented.');
 }
